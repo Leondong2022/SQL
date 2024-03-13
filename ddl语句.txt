@@ -1,0 +1,67 @@
+
+--ddl:结构层级的代码语句，一般用于新建、修改、删除数据库对象。
+--数据库对象：数据库中具体的组件，比如user、table、view等
+
+--常见的ddl语句：create、alter、drop、truncate
+--create 创建
+
+--创建一个表格，表格名字为t_a,表格中有两个列，id 和name，其中id的数据类型为number，name的数据类型为varchar2,长度为20.
+create table t_a (id number,name varchar2(20));
+
+--数据类型
+
+-- 数字数据类型：
+-- number  表示数据类型，包含整数和小数，不需要指定数据长度。注意：number(3,2) 表示数字长度为3，保留2位小数。
+-- int     表示整数，不需要指定长度。
+-- float(3,2)   表示小数（浮点数），需要指定长度和精度
+-- 注意，在Oracle，一般只用number，很少用int和float。
+
+-- 字符串数据类型：
+--char()       表示固定长度字符类型，插入的数据必须是指定的长度，超过或者短于都会报错。
+--varchar()    表示可变长度字符类型，只要长度不超过指定的最大长度即可。
+--varchar2()   表示可变长度字符类型，与varchar()类似，区别在与对中文字符的支持，是Oracle特有的数据类型。
+-- 注意，字符数据类型，在代码中的形式是' '。
+
+-- 时间数据类型
+-- date       日期数据类型，精度可以具体时分秒,如 2022-11-08 11:11:39，不需要指定长度
+select SYSDATE from dual;
+-- timestamp  时间戳，一种高精度的时间数据类型，具体到时分秒后六位，可以理解为邮票盖下邮戳的瞬间，不需要指定长度。
+-- 一般用于交易时间等对时间精度要求高的数据。
+
+--随堂练习：
+--创建一个表，表面为t_b,表中有pay_id,cust_id,cust_name,amt,pay_time。
+-- 其中pay_id数据类型为number,cust_id数据类型为number,
+-- cust_name数据类型为varchar2，长度为20,amt数据类型为number,pay_time数据类型为时间戳。
+create table t_b(pay_id number,cust_id number,cust_name varchar2(20),amt number,pay_time timestamp);
+
+--给表t_a的列及表加注释
+COMMENT ON COLUMN t_a.ID IS '账号';
+COMMENT ON COLUMN t_a.NAME IS '姓名';
+comment on table t_a is '用户信息表';
+
+-- alter 表示修改，更改，但是要注意：修改的是结构，而不是具体内容。同时修改前要注意是否和已有数据冲突。
+
+--给t_a追加列 date，数据类型为date
+alter table t_a add "date" date;
+
+--修改t_a的列名date为 time
+alter table t_a rename column "date" to time;
+
+--修改t_a的time列的数据类型为时间戳timestamp
+alter table t_a  modify  time  timestamp;
+
+--删除表t_a的time
+alter table t_a drop column time;
+
+--修改表t_a是表名为t_aa
+alter table t_a rename to t_aa;
+
+--drop 表示删除
+
+--删除表t_a
+drop table  t_aa;
+
+--truncate 表示清空，具体表现为把一个表结构摧毁然后重构,最后只剩一个表头.
+truncate table t_b;
+
+

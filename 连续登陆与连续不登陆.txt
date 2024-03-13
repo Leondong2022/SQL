@@ -1,0 +1,234 @@
+--连续登陆题
+create table t_user_login
+(
+    user_id    number,
+    login_date date
+);
+
+insert into t_user_login(user_id, login_date)
+values (1, to_date('20200808', 'yyyy-mm-dd') - 3);
+insert into t_user_login(user_id, login_date)
+values (1, to_date('20200808', 'yyyy-mm-dd') - 2);
+insert into t_user_login(user_id, login_date)
+values (1, to_date('20200808', 'yyyy-mm-dd') - 1);
+insert into t_user_login(user_id, login_date)
+values (1, to_date('20200808', 'yyyy-mm-dd'));
+insert into t_user_login(user_id, login_date)
+values (2, to_date('20200808', 'yyyy-mm-dd') - 2);
+insert into t_user_login(user_id, login_date)
+values (2, to_date('20200808', 'yyyy-mm-dd') - 1);
+insert into t_user_login(user_id, login_date)
+values (2, to_date('20200808', 'yyyy-mm-dd'));
+insert into t_user_login(user_id, login_date)
+values (3, to_date('20200808', 'yyyy-mm-dd') - 5);
+insert into t_user_login(user_id, login_date)
+values (3, to_date('20200808', 'yyyy-mm-dd') - 4);
+insert into t_user_login(user_id, login_date)
+values (3, to_date('20200808', 'yyyy-mm-dd') - 3);
+insert into t_user_login(user_id, login_date)
+values (3, to_date('20200808', 'yyyy-mm-dd'));
+insert into t_user_login(user_id, login_date)
+values (4, to_date('20200808', 'yyyy-mm-dd') - 4);
+insert into t_user_login(user_id, login_date)
+values (4, to_date('20200808', 'yyyy-mm-dd') - 2);
+insert into t_user_login(user_id, login_date)
+values (4, to_date('20200808', 'yyyy-mm-dd') - 1);
+insert into t_user_login(user_id, login_date)
+values (4, to_date('20200808', 'yyyy-mm-dd'));
+insert into t_user_login(user_id, login_date)
+values (5, to_date('20200808', 'yyyy-mm-dd'));
+commit;
+
+select *
+from t_user_login;
+--查询用户连续登陆的天数,只统计连续天数不统计间断天数
+/*
+例如：
+  user_id  series_day  start_date  end_date
+     1        4         20200805   20200808
+     2        3         20200806   20200808
+     3        3         20200803   20200805
+     4        3         20200806   20200808
+*/
+--先控制确保连续登录
+--核心点：
+--①登陆日期-row_number()，如果连续登录会得到同一天
+--②group by id，减去后的同一天
+--③count（id）>1 则说明连续登陆
+select user_id, count(user_id) series_day, min(login_date) start_date, max(login_date) end_date
+from (select USER_ID,
+             LOGIN_DATE,
+             LOGIN_DATE - row_number() over (partition by USER_ID order by LOGIN_DATE) same_date
+      from t_user_login ) t
+group by user_id,t.same_date
+having count(t.user_id)>1;
+
+--求用户不登录的最大天数差额，最近登录的时间及再上次登录的时间
+--控制连续不登录
+select user_id,
+       login_date                                                                                ,
+       lag(login_date, 1, null) over (partition by user_id order by login_date)                                         start_day,
+       login_date - lag(login_date, 1, login_date) over (partition by user_id order by login_date) diff_day
+            from t_user_login;
+--筛选去掉连续登陆的数据，剩下连续不登陆的数据
+select t.user_id,t.end_day 最近登陆,t.start_day 上上次登陆,t.diff_day 不登陆天数
+      from (select user_id,
+       login_date                                                                                  end_day,
+       lag(login_date, 1, login_date) over (partition by user_id order by login_date)              start_day,
+       login_date - lag(login_date, 1, login_date) over (partition by user_id order by login_date) diff_day
+            from t_user_login) t
+      where t.diff_day <> 1
+        and t.diff_day <> 0;
+--NBA连冠题
+create table t_nba
+(
+    team_name     varchar2(100),
+    champion_year number
+);
+
+insert into t_nba (team_name, champion_year)
+values ('活塞', 1990);
+insert into t_nba (team_name, champion_year)
+values ('公牛', 1991);
+insert into t_nba (team_name, champion_year)
+values ('公牛', 1992);
+insert into t_nba (team_name, champion_year)
+values ('公牛', 1993);
+insert into t_nba (team_name, champion_year)
+values ('火箭', 1994);
+insert into t_nba (team_name, champion_year)
+values ('火箭', 1995);
+insert into t_nba (team_name, champion_year)
+values ('公牛', 1996);
+insert into t_nba (team_name, champion_year)
+values ('公牛', 1997);
+insert into t_nba (team_name, champion_year)
+values ('公牛', 1998);
+insert into t_nba (team_name, champion_year)
+values ('马刺', 1999);
+insert into t_nba (team_name, champion_year)
+values ('湖人', 2000);
+insert into t_nba (team_name, champion_year)
+values ('湖人', 2001);
+insert into t_nba (team_name, champion_year)
+values ('湖人', 2002);
+insert into t_nba (team_name, champion_year)
+values ('马刺', 2003);
+insert into t_nba (team_name, champion_year)
+values ('活塞', 2004);
+insert into t_nba (team_name, champion_year)
+values ('马刺', 2005);
+insert into t_nba (team_name, champion_year)
+values ('热火', 2006);
+insert into t_nba (team_name, champion_year)
+values ('马刺', 2007);
+insert into t_nba (team_name, champion_year)
+values ('凯尔特人', 2008);
+insert into t_nba (team_name, champion_year)
+values ('湖人', 2009);
+insert into t_nba (team_name, champion_year)
+values ('湖人', 2010);
+commit;
+
+SELECT *
+FROM T_NBA;
+
+--请写出一条SQL语句，查询出在此期间连续获得冠军的队伍有哪些，其连续的年份的起止时间是多少？
+/*
+例如：
+  team_name  begin_date  end_date
+    公牛       1991        1993
+    火箭       1994        1995
+    公牛       1996        1998
+    湖人       2000        2002
+    湖人       2009        2010
+*/
+select team_name,min(champion_year) begin_date ,max(champion_year) end_date
+from(select team_name,champion_year,
+       champion_year-row_number() over (partition by team_name order by champion_year) same_year
+from t_nba) t
+    group by team_name,t.same_year
+having count(team_name)>1 order by begin_date ;
+
+
+--求不夺冠的最大年份差额，最近夺冠的年份及上次夺冠的年份
+select team_name, t.start_year, t.end_year, t.end_year - t.start_year diff_year
+from (select team_name,
+             champion_year                                                                              end_year,
+             lag(champion_year, 1, champion_year) over ( partition by team_name order by champion_year) start_year
+      from t_nba) t
+where t.end_year - t.start_year <> 0
+  and t.end_year - t.start_year <> 1;
+
+select t2.team_name, t2.start_year, t2.end_year, t2.diff_year
+from (select t1.*, row_number() over (partition by team_name order by diff_year desc ) rn
+      from (select team_name, t.start_year, t.end_year, t.end_year - t.start_year diff_year
+            from (select team_name,
+                         champion_year                                             end_year,
+                         lag(champion_year, 1, champion_year)
+                             over ( partition by team_name order by champion_year) start_year
+                  from t_nba) t
+            where t.end_year - t.start_year <> 0
+              and t.end_year - t.start_year <> 1) t1) t2
+where t2.rn = 1;
+
+--连续纳税题
+create table tax_table
+(
+    year number,
+    ent  varchar2(10),
+    amt  number
+);
+
+insert into tax_table (year, ent, amt)
+values (2010, 'AA', 2000);
+insert into tax_table (year, ent, amt)
+values (2011, 'AA', 2500);
+insert into tax_table (year, ent, amt)
+values (2012, 'AA', 2300);
+insert into tax_table (year, ent, amt)
+values (2013, 'AA', 1900);
+insert into tax_table (year, ent, amt)
+values (2014, 'AA', 2200);
+insert into tax_table (year, ent, amt)
+values (2015, 'AA', 2300);
+insert into tax_table (year, ent, amt)
+values (2016, 'AA', 2006);
+insert into tax_table (year, ent, amt)
+values (2010, 'BB', 2400);
+insert into tax_table (year, ent, amt)
+values (2011, 'BB', 2401);
+insert into tax_table (year, ent, amt)
+values (2012, 'BB', 1800);
+insert into tax_table (year, ent, amt)
+values (2013, 'BB', 2100);
+insert into tax_table (year, ent, amt)
+values (2014, 'BB', 2101);
+insert into tax_table (year, ent, amt)
+values (2015, 'BB', 2102);
+insert into tax_table (year, ent, amt)
+values (2016, 'BB', 2020);
+commit;
+
+select *
+from tax_table;
+/*
+查询出在此期间连续3年或者3年以上纳税金额大于等于2000万的企业有哪些，
+其连续的年份的起止时间是多少，结果如下：
+
+  企业名称  开始时间  结束时间
+     AA       2010      2012
+     AA       2014      2016
+     BB       2013      2016
+*/
+
+SELECT T1.ENT
+     , MIN(T1.YEAR)
+     , MAX(T1.YEAR)
+FROM (SELECT T.YEAR
+           , T.ENT
+           , T.YEAR - ROW_NUMBER() OVER (PARTITION BY T.ENT ORDER BY T.YEAR ) AS YEAR_RN
+      FROM tax_table T
+      WHERE T.AMT >= 2000) T1
+GROUP BY T1.ENT, T1.YEAR_RN
+HAVING COUNT(T1.YEAR) > 2;

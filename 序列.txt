@@ -1,0 +1,49 @@
+-- 序列
+-- 序列是一组有序的从小到大或者从大到小的数字。一般在表格里面，充当表格的自增主键存在的信息
+-- 这个序列一般作为代理主键（因为不会重复）。
+-- 创建序列
+CREATE SEQUENCE SEQUENCE_1118
+START WITH 1   ---从1开始
+INCREMENT BY 1  ---每次增长 1 或者说间隔为1
+MAXVALUE 9999999999999999999999999  ---最大值
+MINVALUE 1   --最小值
+CYCLE     --循环
+CACHE 5---提前生成5个序列值放在缓存区
+;
+
+---查看当前序列的值
+SELECT SEQUENCE_1118.CURRVAL FROM DUAL;
+-- 报错，当前序列未定义
+-- 所以查看序列需要先查看下一个序列，然后再查看当前的序列
+
+--生成下一个序列  序列名.Nextval
+SELECT SEQUENCE_1118.NEXTVAL FROM DUAL;
+
+--删除序列
+DROP SEQUENCE SEQUENCE_1118;
+
+--序列的应用：创建一个表格，通过序列往表中加数据
+create table seq_ok(
+id integer,
+name varchar2(30));
+truncate table seq_ok;
+insert  into seq_ok values(SEQUENCE_1118.nextval,'hmm');
+insert  into seq_ok values(SEQUENCE_1118.nextval,'fmm');
+insert  into seq_ok values(SEQUENCE_1118.nextval,'dfv');
+insert  into seq_ok values(SEQUENCE_1118.nextval,'uju');
+commit ;
+select * from seq_ok;
+
+begin
+    for i in 1..10 loop
+        insert into seq_ok values(SEQUENCE_1118.nextval,'hmm');
+        commit ;
+        end loop;
+end;
+
+
+select * from seq_ok;
+
+--清空缓存
+Alter system flush shared_pool;
+

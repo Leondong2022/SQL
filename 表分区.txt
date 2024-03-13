@@ -1,0 +1,253 @@
+--表分区：是对大表从逻辑上的拆分，一般情况下大数据环境中会以时间作为自动分区
+--表分区的类型（oracle）
+--散列分区（哈希分区）hash
+--列表分区 list
+--范围分区 rank
+--组合分组
+
+-- 1.散列分区：根据数据库内部的哈希算法来自动对数据进行分区划分，这种分区的方法一般是用到没有什么特征的字段上面
+-- Create table 分区表名（
+-- 列名  数据类型 约束条件） partition by hash(分区字段的列名)
+-- (partition 分区名1 ,
+-- Partition 分区2，
+-- .........)
+--创建散列分区的表格，在用户名进行分区
+create table emp_sanlie
+(
+    empno    number,
+    ename    varchar2(50),
+    job      varchar2(50),
+    mgr      number,
+    hiredate date,
+    sal      number,
+    comm     number,
+    deptno   number
+) partition by hash (ename)
+(
+    partition p1,
+    partition p2,
+    partition p3,
+    partition p4
+);
+
+--创建普通的表格
+create table empfq as select * from emp where 1=2;
+-- 分别给两个表插入1400000数据
+begin
+  for i in 1..100000 loop
+    insert into empfq select * from emp;
+    commit;
+    end loop;
+end;
+
+begin
+  for i in 1..100000 loop
+    insert into emp_sanlie select * from emp;
+    commit;
+    end loop;
+end;
+-- 对某个名字进行查询,对比查询速度
+select* from emp_sanlie partition(p4) where ename='KING';
+select* from empfq where ename='KING';
+-- 对分区的数据进行查询
+-- Select * from 分区表名 partition(分区字段名)
+select count(*) from emp_sanlie;
+select count(*) from emp_sanlie partition(p1);
+select count(*) from emp_sanlie partition(p2);
+select count(*) from emp_sanlie partition(p3);
+select count(*) from emp_sanlie partition(p4);
+
+--查询指定分区下面的数据
+select empno, ename, job, mgr, hiredate, sal, comm, deptno from emp_sanlie partition(p2);
+
+--列表分区：字段的内容是包含了大量的重复的信息的，比如：性别，城市，地区，商品分类，部门，岗位
+-- Create table 分区表名（
+-- 列名 数据类型 约束条件
+-- ... ...   ....)partition by list(分区的字段名)
+-- （partition 分区名1 values(精确的值)，
+-- Partition 分区名2 values(精确的值));
+--建立以部门为分区条件的列表分区
+create table emp_list partition by list
+(
+    deptno
+)
+(   partition dept10 values (10),
+    partition dept20 values (20),
+    partition dept30 values (30)
+) as  select *
+from EMP_BIG;
+
+--查询进行对比
+select * from empfq where deptno=10;
+select* from emp_list partition (dept10) where deptno=10;
+--查询表里的数据
+SELECT count(*) from emp_list;
+select count(*) from emp_list partition (dept10);
+select count(*) from emp_list partition (dept20);
+select count(*) from emp_list partition (dept30);
+
+--练习：根据岗位做列表分区
+create table emp_job partition by list (JOB)
+ (   partition CLERK values ('CLERK'),
+    partition SALESMAN values ('SALESMAN'),
+    partition MANAGER values ('MANAGER'),
+    partition PRESIDENT values ('PRESIDENT'),
+    partition ANALYST values ('ANALYST')
+)
+as select * from empfq;
+
+--范围分区：根据一定的范围进行分区，一般用于无法细分到有限个数的分区类型
+-- Create table 分区表名（
+-- 列名 数据类型 约束条件，
+-- .... ... ....)partition by  range(分区字段名)
+-- (
+-- Partition 分区的名字values less than(范围边界值),
+-- .... .... ...
+-- Partition 分区名字 values less than(maxvalue)
+-- 创建一个范围分区表格 less than 2000以下分区名为C,2000-3000分区名为B，3000以上分区名为A
+create table emp_range partition by range (sal)
+(partition "C" values less than (2000),   --不包含边界值
+ partition "B" values less than (3000),
+ partition "A" values less than (MAXVALUE )
+) AS SELECT * FROM EMPFQ;
+
+-- 查询对比
+select * from empfq where sal=3000;
+select * from emp_range partition (A) where sal=3000;
+
+-- 例：创建范围分区，按照入职年份进行范围分区，1981之前为一个分区，1981到1982为一个分区，1982之后为一个分区
+create table emp_range_hiredate partition by range (hiredate)
+(partition y_1980 values less than (date '1981-01-01'),
+ partition y_1981 values less than (date '1982-01-01'),
+ partition y_1982 values less than (maxvalue ))
+ as select * from empfq;
+
+-- 查数据 1981分区的数据
+-- Select * from 分区表名 partition （分区名）
+select * from emp_range_hiredate partition(y_1981);
+
+--组合分区 以上三个分区两两搭配
+-- 散列+范围
+-- 散列+列表
+-- 范围+列表
+-- Create table  分区表名（
+-- 列名 数据类型 约束条件，
+-- .... .... ....)
+-- Partition by 父分区类型（父分区列名）
+-- Subpartition by 子分区类型（子分区列名）
+-- （
+-- Partition 父分区名字1 values...(
+-- Subpartition 子分区名字1 values ...,
+-- Subpartition 子分区名字2 values ....),
+-- Partition 父分区名字2 values...(
+-- Subpartition 子分区名字1 values ...,
+-- Subpartition 子分区名字2 values ....),
+-- .....
+-- );
+--对emp表进行分区，其中按部门编号进行父分区，入职时间进行子分区
+create table emp_list_range  partition by list (deptno)
+subpartition by range (hiredate)
+(partition deptno_10 values (10)
+    (subpartition y10_1980 values less than (date'1981-01-01'),
+     subpartition y10_1981 values less than (date'1982-01-01'),
+     subpartition y10_1982 values less than (maxvalue )),
+partition deptno_20 values (20)
+    (subpartition y20_1980 values less than (date'1981-01-01'),
+     subpartition y20_1981 values less than (date'1982-01-01'),
+     subpartition y20_1982 values less than (maxvalue )),
+partition deptno_30 values (30)
+    (subpartition y30_1980 values less than (date'1981-01-01'),
+     subpartition y30_1981 values less than (date'1982-01-01'),
+     subpartition y30_1982 values less than (maxvalue ))
+) as select * from empfq;
+
+--查询父分区及子分区数据
+select count(*) from emp_list_range partition (deptno_10);
+select count(*) from emp_list_range subpartition (y10_1981);
+--对emp表进行分区，其中按入职时间进行父分区，岗位进行子分区
+create table emp_range_list
+    partition by range (hiredate)
+        subpartition by list ( job )
+(partition y_1980 values less than (date'1981-01-01')
+    (subpartition y_1980_CLERK values ('CLERK'),
+     subpartition y_1980_SALESMAN values ('SALESMAN'),
+     subpartition y_1980_MANAGER values ('MANAGER'),
+     subpartition y_1980_ANALYST values ('ANALYST'),
+     subpartition y_1980_PRESIDENT values ('PRESIDENT') )  ,
+partition y_1981 values less than (date'1982-01-01')
+    (subpartition y_1981_CLERK values ('CLERK'),
+     subpartition y_1981_SALESMAN values ('SALESMAN'),
+     subpartition y_1981_MANAGER values ('MANAGER'),
+     subpartition y_1981_ANALYST values ('ANALYST'),
+     subpartition y_1981_PRESIDENT values ('PRESIDENT') ),
+partition y_1982 values less than (maxvalue )
+    (subpartition y_1982_CLERK values ('CLERK'),
+     subpartition y_1982_SALESMAN values ('SALESMAN'),
+     subpartition y_1982_MANAGER values ('MANAGER'),
+     subpartition y_1982_ANALYST values ('ANALYST'),
+     subpartition y_1982_PRESIDENT values ('PRESIDENT') )
+) as select * from empfq;
+--查询父分区及子分区数据
+select count(* ) from emp_range_list partition  (y_1981);
+select count(* ) from emp_range_list subpartition (y_1981_SALESMAN);
+-- 合并：将两个分区的数据，合并在一起。集中放在任意一个分区中保存
+-- Alter table 表名 merge partitions 分区1，分区2 into partition 其中某个分区的名字
+alter table emp_list merge partitions dept_10,dept_20 into partition dept_10;
+select count(*) from emp_list partition (dept_10);
+select count(*) from emp_list partition (dept_20);
+--清空分区数据
+-- Alter table 分区表名 truncate partition 分区名
+alter table emp_range truncate partition B;
+select * from emp_range partition (B);
+-- 添加分区
+-- Alter table 分区表名 add partition 新的分区名 values less than(范围边界值)
+alter table emp_list_job add partition aaa values ('AAA');
+alter table emp_range1 add partition p_hiredate1983 values less than(date'1984-1-1');
+--删除分区
+--Alter table 分区表名 drop partition 分区名
+alter table emp_list_job drop partition aaa;
+--删除分区表
+--Drop table 分区表名
+Drop table  emp_list_job;
+-- 拆分：将一个分区的内容，分别拆到多个分区中进行保存和管理
+-- Alter table 表名 split partition 分区的名字 at（切割的边界值） into(partition 分区1，partition 分区2)
+ALTER TABLE EMP_RANGE split partition B at(2501) into(partition B,partition D);
+-- 分区的重命名
+-- Alter table 分区表名 rename partition 旧名字 to 新名字
+alter table emp_range rename partition A to ZZ;
+
+--替换无分区原表为分区表的方法
+alter table EMPFQ rename to EMPFQ_1;
+create table EMPFQ partition by range (hiredate)
+        subpartition by list ( job )
+(partition y_1980 values less than (date'1981-01-01')
+    (subpartition y_1980_CLERK values ('CLERK'),
+     subpartition y_1980_SALESMAN values ('SALESMAN'),
+     subpartition y_1980_MANAGER values ('MANAGER'),
+     subpartition y_1980_ANALYST values ('ANALYST'),
+     subpartition y_1980_PRESIDENT values ('PRESIDENT') )  ,
+partition y_1981 values less than (date'1982-01-01')
+    (subpartition y_1981_CLERK values ('CLERK'),
+     subpartition y_1981_SALESMAN values ('SALESMAN'),
+     subpartition y_1981_MANAGER values ('MANAGER'),
+     subpartition y_1981_ANALYST values ('ANALYST'),
+     subpartition y_1981_PRESIDENT values ('PRESIDENT') ),
+partition y_1982 values less than (maxvalue )
+    (subpartition y_1982_CLERK values ('CLERK'),
+     subpartition y_1982_SALESMAN values ('SALESMAN'),
+     subpartition y_1982_MANAGER values ('MANAGER'),
+     subpartition y_1982_ANALYST values ('ANALYST'),
+     subpartition y_1982_PRESIDENT values ('PRESIDENT') )
+) as select * from EMPFQ_1;
+
+-- ***表分区的优缺点
+-- 1.改善查询性能：对分区对象的查询可以搜索到自己关心的分区，提高查询速度；
+-- 2.强可用性：如果表的某个分区出现故障，其他的分区数据仍可以继续使用；
+-- 3.维护方便：哪个表的分区数据出现故障，需要修复数据，只需要修复对应的分区即可；
+-- 缺点：分区表相关，已经存在的表没办法转化为分区表
+
+-- 已经存在的表a如何变成分区表a
+-- 1.先对源表重命名a1
+-- 2.创建分区表，叫a
+-- 3.把a1里面的数据insert into 到a中
+-- 4.备份a1表，删除a1表

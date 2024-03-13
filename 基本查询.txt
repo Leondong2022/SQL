@@ -1,0 +1,229 @@
+--基本查询 select
+
+--查询所有列
+select *
+from EMP;
+select empno,
+       ename,
+       job,
+       mgr,
+       hiredate,
+       sal,
+       comm,
+       deptno
+from EMP;
+--优先使用这种，可提高查询效率。
+
+--条件查询
+
+--查询工号为7788的员工信息
+select empno,
+       ename,
+       job,
+       mgr,
+       hiredate,
+       sal,
+       comm,
+       deptno
+from EMP
+where EMPNO = 7788;
+--查询部门20的员工信息
+select empno,
+       ename,
+       job,
+       mgr,
+       hiredate,
+       sal,
+       comm,
+       deptno
+from EMP
+where DEPTNO = 20;
+
+--不等查询
+--查询不在部门20的员工信息
+select empno,
+       ename,
+       job,
+       mgr,
+       hiredate,
+       sal,
+       comm,
+       deptno
+from EMP
+where DEPTNO != 20; --不等于的表示形式:!=    <>
+select empno,
+       ename,
+       job,
+       mgr,
+       hiredate,
+       sal,
+       comm,
+       deptno
+from EMP
+where DEPTNO <> 20;
+--查询工资在1500以下的员工信息
+select empno,
+       ename,
+       job,
+       mgr,
+       hiredate,
+       sal,
+       comm,
+       deptno
+from EMP
+where SAL < 500;
+--查询工资在2500以上的员工信息
+select empno,
+       ename,
+       job,
+       mgr,
+       hiredate,
+       sal,
+       comm,
+       deptno
+from EMP
+where SAL > 2500;
+
+--逻辑查询 ： and  or  in  not in   between and  all  any
+--查询在20部门并且工资在1500以上的员工信息
+select empno,
+       ename,
+       job,
+       mgr,
+       hiredate,
+       sal,
+       comm,
+       deptno
+from EMP
+where DEPTNO = 20
+  and SAL > 1500;
+--查询工资在1500以下或者2500以上的员工信息
+select empno,
+       ename,
+       job,
+       mgr,
+       hiredate,
+       sal,
+       comm,
+       deptno
+from EMP
+where SAL < 1500
+   or SAL > 2500;
+--查询在20部门并且工资在1500以下，或者在10部门工资2500以上的员工信息
+select empno,ename,job,mgr,
+       hiredate,sal,comm,deptno
+from EMP
+where (DEPTNO = 20 and SAL < 1500)
+   or (DEPTNO = 10 and SAL > 2500);
+--查询在部门10，20的员工信息
+select empno,ename,job,mgr,
+       hiredate,sal,comm,deptno
+from EMP
+where DEPTNO=10 or  DEPTNO=20;
+
+select empno,ename,job,mgr,
+       hiredate,sal,comm,deptno
+from EMP
+where DEPTNO in (10,20);
+
+--查询岗位不是 CLERK ，SALESMAN， MANAGER 的员工信息
+select empno,ename,job,mgr,
+       hiredate,sal,comm,deptno
+from EMP
+where JOB not in ( 'CLERK' ,'SALESMAN', 'MANAGER');
+
+--查询工资在1500到2500的员工信息
+--between and 包含两边，是闭区间，同时小数值放前面。
+select empno,ename,job,mgr,
+       hiredate,sal,comm,deptno
+from EMP
+where SAL between 1500 and 2500;
+
+--查询工资比20部门的所有人的工资都高的员工信息
+-- >all(子查询)相对大于子查询中的最大值
+select empno,ename,job,mgr,
+       hiredate,sal,comm,deptno
+from EMP
+where SAL > all (select sal from EMP where DEPTNO=20);
+
+--查询工资比20部门的某些人的工资高的员工信息
+-- >any相当于大于子查询中的最小值
+select empno,ename,job,mgr,
+       hiredate,sal,comm,deptno
+from EMP
+where SAL > any (select sal from EMP where DEPTNO=20);
+
+--查询出comm列为空值的员工信息
+select empno,ename,job,mgr,
+       hiredate,sal,comm,deptno
+from EMP
+where COMM is null ;
+
+--查询出comm列不为空值的员工信息
+select empno,ename,job,mgr,
+       hiredate,sal,comm,deptno
+from EMP
+where COMM is not null ;
+
+
+--集合运算：union、 union all、minus、intersect
+
+--union :合并结果集，但是会去重,自带排序
+select id, name from T_AAA
+ union
+select id, name from T_CCC;
+
+--union all：合并结果集，但不去重,不排序
+select id, name from T_AAA
+ union all
+select id, name from T_CCC;
+
+--union 和 union all的区别
+--从合并结果集的情况看：都是合并结果集，但是union会去重,自带排序，而union all只是简单拼接，不做任何操作。
+--从执行效率来看：union all的执行效率更高
+
+--minus:减集
+select id, name from T_CCC
+ minus                          --正常有结果
+select id, name from T_AAA;
+
+select id, name from T_AAA
+ minus                          --无结果，因为小集在前
+select id, name from T_CCC;
+
+--intersect:交集，最后结果为公共有的部分
+select id, name from T_AAA
+ intersect
+select id, name from T_CCC;
+
+--排序 order by
+
+--查询emp表的所有员工信息，按工资升序排序
+--升序：asc（默认，可不写） ，降序：desc
+select empno,ename,job,mgr,
+       hiredate,sal,comm,deptno
+from EMP  order by SAL  ;
+
+--查询emp表的所有员工信息，按工资降序排序
+select empno,ename,job,mgr,
+       hiredate,sal,comm,deptno
+from EMP  order by SAL desc ;
+
+--二级排序
+----查询emp表的所有员工信息，按工资升序排序，工资相同时，按工号降序排序
+select empno,ename,job,mgr,
+       hiredate,sal,comm,deptno
+from EMP  order by SAL,EMPNO desc  ;
+
+--去重
+
+--distinct:每一行都做比对，只保留第一次出现的结果
+select distinct JOB from EMP order by JOB desc ;
+
+--对部门编号和岗位进行去重
+select distinct DEPTNO,JOB from EMP order by DEPTNO;
+
+--group by :分组去重
+select JOB from EMP group by JOB;
+select JOB,DEPTNO from EMP group by JOB,DEPTNO;
+

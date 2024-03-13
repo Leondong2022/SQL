@@ -1,0 +1,200 @@
+--分析函数，也称开窗函数
+--分析函数中一定有over且不和group by 连用，而是与特有的partition by 连用。
+--分析函数总共有三大类：聚合类分析函数，排名类分析函数，位移分析函数
+
+--聚合类分析函数：min() over(),max() over(),count() over(),avg()over() ,sum()over()
+--查询emp表中每个部门的最低工资，最低工资单独成一列跟在emp后
+select e.EMPNO,
+       ENAME,
+       JOB,
+       MGR,
+       HIREDATE,
+       SAL,
+       DEPTNO,
+       min(SAL) over (partition by DEPTNO) min_sal
+from EMP e;
+
+select e.EMPNO,
+       ENAME,
+       JOB,
+       MGR,
+       HIREDATE,
+       SAL,
+       DEPTNO,
+       min(SAL) over (partition by DEPTNO order by SAL desc ) min_sal --大小比较
+from EMP e;
+--查询emp表中每个部门的最高工资，最低工资单独成一列跟在emp后
+select e.EMPNO,
+       ENAME,
+       JOB,
+       MGR,
+       HIREDATE,
+       SAL,
+       DEPTNO,
+       max(SAL) over (partition by DEPTNO) max_sal
+from EMP e;
+
+select e.EMPNO,
+       ENAME,
+       JOB,
+       MGR,
+       HIREDATE,
+       SAL,
+       DEPTNO,
+       max(SAL) over (partition by DEPTNO order by SAL) max_sal
+from EMP e;
+
+----查询emp表中每个部门的平均工资，平均工资单独成一列跟在emp后
+select e.EMPNO,
+       ENAME,
+       JOB,
+       MGR,
+       HIREDATE,
+       SAL,
+       DEPTNO,
+       round(avg(SAL) over (partition by DEPTNO), 2) min_sal
+from EMP e;
+
+select e.EMPNO,
+       ENAME,
+       JOB,
+       MGR,
+       HIREDATE,
+       SAL,
+       DEPTNO,
+       round(avg(SAL) over (partition by DEPTNO order by SAL), 2) min_sal
+from EMP e;
+----查询emp表中每个部门的部门人数，部门人数单独成一列跟在emp后
+select e.EMPNO,
+       ENAME,
+       JOB,
+       MGR,
+       HIREDATE,
+       SAL,
+       DEPTNO,
+       count(EMPNO) over (partition by DEPTNO) count_num
+from EMP e;
+
+select e.EMPNO,
+       ENAME,
+       JOB,
+       MGR,
+       HIREDATE,
+       SAL,
+       DEPTNO,
+       count(EMPNO) over (partition by DEPTNO order by EMPNO) count_num
+from EMP e;
+
+--order by 在聚合类分析函数中的妙用。
+--不加order by
+select e.EMPNO,
+       ENAME,
+       JOB,
+       MGR,
+       HIREDATE,
+       SAL,
+       DEPTNO,
+       sum(sal) over (partition by DEPTNO) sum_sal
+from EMP e;
+--加order by
+select e.EMPNO,
+       ENAME,
+       JOB,
+       MGR,
+       HIREDATE,
+       SAL,
+       DEPTNO,
+       sum(sal) over (partition by DEPTNO order by SAL) sum_sal --累加
+from EMP e;
+--over中的order by 与where 后的order by 的区别
+--over中的order by内部不受影响，但是受到where 后的order by 的整体影响。
+select e.EMPNO,
+       ENAME,
+       JOB,
+       MGR,
+       HIREDATE,
+       SAL,
+       DEPTNO,
+       sum(sal) over (partition by DEPTNO order by SAL) sum_sal --累加
+from EMP e;
+
+select e.EMPNO,
+       ENAME,
+       JOB,
+       MGR,
+       HIREDATE,
+       SAL,
+       DEPTNO,
+       sum(sal) over (partition by DEPTNO order by SAL) sum_sal --累加
+from EMP e
+order by DEPTNO desc;
+
+--排名类分析函数:over()中一定要带order by
+--row_number() over ():按1.2.3.4...n的顺序排列，不考虑并列。在over（）中加partition by分组和order by 排序。
+--起到分组排序的作用，但是注意row_number() over ()不考虑并列。
+select EMP.*, row_number() over (partition by DEPTNO order by SAL desc ) rn
+from EMP;
+--查询emp表中的数据，并按岗位分组，按工资升序排序，不考虑并列。
+select EMP.*, row_number() over (partition by JOB order by SAL ) rn
+from EMP;
+--查询emp表中的数据，并按岗位分组，按工资升序排序，不考虑并列。并展示每个岗位工资最少的2个人。
+select *
+from (select EMP.*, row_number() over (partition by JOB order by SAL ) rn from EMP) e
+where e.rn <= 2;
+
+--rank() over():排序，但是考虑并列，遇到相同的情况时，排名取一样，但是会跳值保证总行数不变。
+--1224
+select emp.EMPNO,
+       ENAME,
+       JOB,
+       MGR,
+       HIREDATE,
+       SAL,
+       COMM,
+       DEPTNO,
+       rank() over (order by SAL) rank
+from EMP;
+
+-- dense_rank() over ():排序时考虑并列，遇到相同情况取并列且不跳值，保证了排序数字的连续。
+-- 能够看出一共多少种情况，但是看不出有多少行数据
+-- 1223
+select EMPNO,
+       ENAME,
+       JOB,
+       MGR,
+       HIREDATE,
+       SAL,
+       COMM,
+       DEPTNO,
+       dense_rank() over (order by SAL) dense
+from EMP;
+
+--偏移类分析函数
+--lag(偏移列，偏移幅度，默认值) over(order by):向下偏移
+select SAL, lag(SAL, 1, 0) over (order by SAL) lag_sal
+from EMP;
+--利用偏移求占比
+select round((sal - e.lag_sal) / e.lag_sal, 4) * 100 || '%'
+from (select SAL, lag(SAL, 1, null) over (order by SAL) lag_sal from EMP) e;
+
+--lead(偏移列，偏移幅度，默认值) over(order by):向上偏移
+select SAL, lead(SAL, 1, 0) over (order by SAL) lag_sal
+from EMP;
+
+--占比类分析函数
+-- ratio_to_report():求每列对分组内总值的占比。
+select JOB,SAL,
+       round(ratio_to_report(sum(SAL)) over (partition by JOB), 2) ratio
+from EMP
+group by JOB,SAL;
+
+--其他分析函数
+--first_value(列)over（分组 排序）
+select DEPTNO, SAL, first_value(SAL) over (partition by DEPTNO )
+from EMP;
+--last_value(列)over（分组 排序）
+select DEPTNO, SAL, last_value(SAL) over (partition by DEPTNO )
+from EMP;
+
+
+

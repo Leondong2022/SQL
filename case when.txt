@@ -1,0 +1,155 @@
+--case when：一般用于根据条件进行判断，进而对目标打标签。属于标准化、一致化工作的一种。
+--用法分两种，一种是简单case when（有限可能） 一种是复杂case when（无限可能，或者说范围）
+
+--简单case when 的用法:适用于对某一个列打标签，而且该列的值的可能性有限。
+----根据员工的岗位打标签，岗位为CLERK标注为文员，SALESMAN标注销售，MANAGER标注为经理，ANALYST标注为研究员，PRESIDENT标注为总裁
+--写法一：
+select JOB,
+       case JOB
+           when 'CLERK' then '文员'
+           when 'SALESMAN' then '销售'
+           when 'MANAGER' then '经理'
+           when 'ANALYST' then '研究员'
+           when 'PRESIDENT' then '总裁' end 岗位
+from EMP;
+--写法二：
+select JOB,
+       case JOB
+           when 'CLERK' then '文员'
+           when 'SALESMAN' then '销售'
+           when 'MANAGER' then '经理'
+           when 'ANALYST' then '研究员'
+           else '总裁' end 岗位
+from EMP;
+--写法三：
+select JOB,
+       case
+           when JOB = 'CLERK' then '文员'
+           when JOB = 'SALESMAN' then '销售'
+           when JOB = 'MANAGER' then '经理'
+           when JOB = 'ANALYST' then '研究员'
+           else '总裁' end 岗位
+from EMP;
+
+-- case when 复杂用法（可范围，可无限情况）
+--根据工资给出工资范围
+--写法一：
+select sal,
+       case
+           when SAL between 700 and 1200 then 1
+           when SAL between 1201 and 1400 then 2
+           when SAL between 1401 and 2000 then 3
+           when SAL between 2001 and 3000 then 4
+           else 5 end sal_grade,
+       DEPTNO
+from EMP;
+--写法二：
+select sal,
+       case
+           when SAL between 700 and 1200 then 1
+           when SAL < 1400 then 2
+           when SAL < 2000 then 3
+           when SAL < 3000 then 4
+           else 5 end sal_grade,
+       DEPTNO
+from EMP;
+
+-- 练习：在emp表中，查询每个人的工资等级，2000以下是C，2000-3000是B，3000以上是A
+select ENAME,
+       sal,
+       case
+           when sal < 2000 then 'C'
+           WHEN SAL < 3000 THEN 'B'
+           else 'A' end sal_grade
+From EMP;
+
+--decode():相对于简单case when，把简单case when 的when和then这些去掉，替换成一个函数
+--因为decode是内置函数，在一定层度上，用decode替换简单case when ，有一点点提高查询效率的作用。
+select JOB, decode(JOB, 'CLERK', '文员', 'SALESMAN', '销售', 'MANAGER', '经理', 'ANALYST', '研究员', '总裁') 岗位
+from EMP;
+
+-- 练习：
+-- 查询员工的工号和部门编号，并对部门做打标签，标签列命名为DNAME
+-- 部门编号为10并且工资大于2000的，打上ACCOUNTING的标签；
+-- 部门编号为10并且工资小于2000的，打上RESEARCH的标签
+-- 部门标号为30则打上sales的标签，其余的标签为OPERATIONS。
+select EMPNO,
+       DEPTNO,
+       case
+           when DEPTNO = 10 and SAL > 2000 then 'ACCOUNTING'
+           when DEPTNO = 10 and SAL < 2000 then 'RESEARCH'
+           when DEPTNO = 30 then 'sales'
+           else 'OPERATIONS' end DNAME
+from EMP;
+
+--对员工的工资收入做分类，并返回员工工号，姓名，工资和分类
+--其中工资低于1500为low，1500到3000为medium，高于3000为high。
+select EMPNO, ENAME, SAL,
+       case when SAL < 1500 then 'low'
+            when SAL < 3000 then 'medium'
+            else 'high' end comments
+From EMP;
+
+
+--建表语句如下
+CREATE TABLE SCORE_221
+(
+    学号 VARCHAR2(20),
+    课程 VARCHAR2(20),
+    分数 NUMBER
+);
+INSERT INTO SCORE_221
+VALUES ('001', '语文', 88);
+INSERT INTO SCORE_221
+VALUES ('001', '数学', 79);
+INSERT INTO SCORE_221
+VALUES ('002', '数学', 85);
+INSERT INTO SCORE_221
+VALUES ('003', '语文', 95);
+INSERT INTO SCORE_221
+VALUES ('003', '数学', 80);
+INSERT INTO SCORE_221
+VALUES ('003', '英语', 60);
+INSERT INTO SCORE_221
+VALUES ('004', '语文', 95);
+INSERT INTO SCORE_221
+VALUES ('004', '数学', 95);
+commit;
+
+-- 计算出每个课程 85 到 100 分的人数，85分以下的人数
+--第一步，分别对 85 到 100 分及85分以下的人打标签
+select 课程,分数,case when 分数 between 85 and 100 then 1  end "85分以上", case when 分数 <85 then 1 end "85分以下"
+from SCORE_221;
+--第二步：计算标签后的总和
+select 课程,
+       count(case when 分数 between 85 and 100 then 1 end) "85分以上",
+       count(case when 分数 < 85 then 1 end)               "85分以下"
+from SCORE_221
+group by 课程;
+
+select 课程,分数段,count(s.分数段) 分数段人数
+from(
+select 课程,分数,
+case when 分数<85 then '低于85'
+     else '85-100' end 分数段
+    from SCORE_221) s
+group by 课程,分数段;
+
+-- 方法二：
+SELECT T.课程
+     , SUM(CASE
+               WHEN T.分数 >= 85 THEN 1
+               ELSE 0 END) AS RANGE_100_85
+     , SUM(CASE
+               WHEN T.分数 < 85 THEN 1
+               ELSE 0 END) AS RANGE_85
+FROM SCORE_221 T
+GROUP BY T.课程;
+
+-- 方法三：
+SELECT T.课程,
+       sum(T.B),
+       COUNT(T.B)-sum(T.B)
+FROM (SELECT 课程,case when 分数 between 85 and 100 then 1 when 分数<85 then 0 end as B
+FROM SCORE_221)T
+GROUP BY T.课程;

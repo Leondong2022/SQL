@@ -1,0 +1,87 @@
+--根据查询的结果创建表
+create table emp_1 as select EMPNO,ENAME,JOB from EMP;
+
+--根据已有表的表结构创建表
+create table emp_2 as select * from emp where 1=2;
+
+--往空白表中插入其他表的数据
+insert into emp_2(SAL) select SAL from EMP;
+commit ;
+
+
+--约束：对表数据的某种限制
+--约束的种类：主键约束，唯一约束，非空约束，检查约束,外键约束
+
+--主键约束（primary key)：相当于唯一约束和非空约束的集合，主键约束一定唯一非空
+--一般情况下，一个表的主键列，为该表最核心字段，也是与其他表做表连接的匹配条件。
+
+--设置主键约束的方法：
+--方法一：建表的同时，设主键
+create table t_aaa (
+    id  number primary key ,
+    name varchar2(20)
+);
+
+--插入数据
+insert into t_aaa(id, name) values (111,'aaa');
+commit ;
+insert into t_aaa(id, name) VALUES (111,'bbb');  --插入失败，违反唯一约束
+insert into t_aaa(id, name) VALUES (null,'ccc'); --插入失败，违反非空约束
+
+--方法二：建表后改表结构，追加主键约束
+alter table T_A add constraint pk_id primary key (ID);
+
+
+--唯一约束 unique ：当在某列设置了唯一约束时，该列不再允许出现重复值
+
+--设置唯一约束的方法
+--创建表的同时，创建唯一约束
+create table t_bbb (
+    id  number unique ,
+    name varchar2(20)
+);
+--插入数据
+insert into t_bbb(id, name) values (111,'aaa');
+commit ;
+insert into t_bbb(id, name) VALUES (111,'bbb');  --插入失败，违反唯一约束
+
+--建表后修改表结构，追加唯一约束
+alter table t_bbb add constraint uni_id unique (name);
+
+--非空约束 not null：设置了非空约束的列，不再允许出现空值
+
+--设置非空约束
+--创建表的同时，创建唯一约束
+create table t_ccc (
+    id  number not null ,
+    name varchar2(20)
+);
+--插入数据
+insert into t_ccc(id, name) values (111,'aaa');
+commit ;
+insert into t_ccc(id, name) values (null,'aaa'); --插入失败，违反唯一约束
+
+--建表后修改表结构，追加非空约束
+ALTER TABLE t_ccc MODIFY name NOT NULL;
+
+--检查约束(check):检查输入的内容是否符合规定，满足才允许输入，不满足则报错。
+
+--设置检查约束
+--创建表的同时，创建唯一约束
+create table t_ddd (
+    id  number ,
+    name varchar2(20),
+    gender varchar2(20) check(gender='男'or gender='女')   --not null
+);
+--插入数据
+insert into t_ddd(id, name,gender) values (111,'aaa',null);  --null可以输入
+insert into t_ddd(id, name,gender) values (111,'aaa','aaa'); --无法插入，违反检查约束条件
+
+--建表后修改表结构，追加检查约束
+alter table t_ddd add constraint check_ddd check ( id=111 or id=222);
+
+--外键约束（foreign key）：一般情况下，表中的外键会是另一张表的主键，主要用于两张表的便捷连接。
+--一旦设置了外键约束，则说明两张表直接建立了联系，修改表数据时，注意要两张表同步。
+
+--设置外键约束
+alter table t_bbb add constraint fk_t_bbb  foreign key(id) references t_aaa (id);

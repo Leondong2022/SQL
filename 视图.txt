@@ -1,0 +1,63 @@
+-- 视图 view
+-- 是一个虚拟的表格，是一个select语句查询的结果形成的一个结果集，不会占用磁盘的空间，运行的速度和消耗的资源与原来的select语句是一样的。
+-- 运行视图，就相当于重新了一次select语句，视图的数据和源表是实时变更的关系
+
+--创建视图需要先授权
+grant create view to SCOTT;   --在system账户或者有DBA权限的用户中执行
+
+--创建视图view的语法
+/*
+create or replace  [force /no force] view 视图名
+as select 列名 from 表名
+with read only
+*/
+
+--OR REPLACE：如果视图已经存在，则替换旧视图。
+--FORCE：即使基表不存在，也可以创建该视图，但是该视图不能正常使用，当基表创建成功后，视图才能正常使用。
+--NOFORCE：如果基表不存在，无法创建视图，该项是默认选项。
+-- WITH READ ONLY说明视图是只读视图，不能通过该视图进行增删改操作。现实开发中，基本上不通过视图对表中的数据进行增删改操作。
+
+--创建一个以emp为基表，只封装ename，job 和deptno的只读视图
+create view emp_v as
+select ENAME, JOB, DEPTNO
+from EMP
+with read only;
+
+--查看刚刚创建的视图
+select * from EMP_V;
+
+
+--创建一个以emp为基表的视图，其中只展示姓名，岗位，和入职年份
+create or replace view emp11_v as select EMPNO,JOB,to_char(HIREDATE,'yyyy') HIREyear from EMP
+with read only ;
+
+--删除视图
+drop view emp11_v;
+
+-- 视图的作用和优点
+-- 1，将一段很长的sql语句，当成一个单词进行存储，可以简化一些复杂的sql语句的编写
+-- 2，传递数据的时候，通过视图可以隐藏一些敏感信息
+-- 3，With read only 可以让视图无法被修改，从而更加增加源表数据的安全性
+-- 4，节省服务器的流量
+-- 视图的缺点：
+-- 如果查询的语句里面包含了视图，那么可能导致查询的逻辑非常复杂，但是查询的语句又很简单，没有办法进行sql优化
+
+-- 练习
+---1 创建一个只读视图，查询每个部门的部门编号 ，这个部门的人数，平均工资
+create or replace view emp_dept_v as
+select DEPTNO, count(EMPNO) renshu, round(avg(SAL), 2) pjgz
+from EMP
+group by DEPTNO
+with read only;
+---2 创建一个只读视图 查询每个员工的姓名，以及员工对应领导的工号，领导姓名
+create or replace view ename_v as
+select t1.ENAME 员工姓名, t2.empno 领导工号, t2.ename 领导姓名
+from EMP t1
+       left  join emp t2 on t1.MGR = t2.EMPNO
+with read only;
+---3 创建一个只读视图，要求包括emp的信息，员工的部门名称和办公地点
+create or replace view emp_dept_v as
+select t1.*, t2.dname, t2.loc
+from emp t1
+         join dept t2 on t1.DEPTNO = t2.DEPTNO
+with read only;

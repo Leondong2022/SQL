@@ -1,0 +1,28 @@
+
+--在Oracle中，--表示注释，只起到解释说明的作用，不运行。
+--退出Oracle软件
+
+ctrl+c  --（按多几次）
+
+--重新进入Oracle
+在cmd命令符中输  sqlplus
+
+用户名：system
+密码：123456
+（出现连接到则说明已进入system账号）
+
+alter user scott identified by 123456 account unlock；
+--注意：sql代码结尾必须以英文的分号;结尾。
+
+
+--在system账号下创建新用户（注意：需先登录system用户）
+create user qwer identified by 123456 account unlock；
+--效果等同于以下两行代码
+create user qwer identified by 123456；
+alter user qwer account unlock；
+
+--对新创建的用户授权
+grant dba,resource,connect to qwer;
+
+--删除用户（要在system用户下）
+drop user qwer;

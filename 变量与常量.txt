@@ -1,0 +1,279 @@
+-----ORACLE PL/SQL程序设计:是一门编程语言，可以创建存储过程，函数以及 包
+--匿名代码：一个没有名字的代码块，一般都是不需要重复运行的代码。
+--语法结构：
+/*DECLARE
+    --声明的地方(声明变量，常量啊，游标等等)，这一块不是必须的。
+BEGIN
+    --代码的执行的逻辑块(就是要做什么)
+    EXCEPTION
+    --处理异常的逻辑
+    END;*/
+
+--1、每写完一句需要用分号表示结束(必须)
+--2、最后的END后面的分号不要忘了
+
+--变量：相当于一个容器，用于承载具体的值，但是一次只能承载一个值
+
+-- 输出
+-- Dbms_output.put_line(一个内容),输出的结果换行
+begin
+    for i in 1..5
+        loop
+            DBMS_OUTPUT.PUT_LINE(i);
+        end loop;
+end;
+-- Dbms_output.put（一个内容）；将所有的put的内容先全部存起来，然后遇到了put_line之后一起输出
+begin
+    for i in 1..5
+        loop
+            DBMS_OUTPUT.PUT(i);
+            DBMS_OUTPUT.PUT_LINE(i);
+        end loop;
+end;
+
+--比如：匿名代码块打印HELLO WORLD
+BEGIN
+    DBMS_OUTPUT.PUT_LINE('HELLO WORLD');
+END;
+
+--变量赋值(1)：先声明，再赋值
+declare
+    v_aaa varchar2(20);
+begin
+    v_aaa := 'HELLO WORLD';
+    DBMS_OUTPUT.PUT_LINE(v_aaa);
+end;
+declare
+    v_aaa varchar2(20);
+begin
+    select 'HELLO WORLD' into v_aaa from DUAL;
+    DBMS_OUTPUT.PUT_LINE(v_aaa);
+end;
+----变量赋值(2)：声明同时赋值
+declare
+    v_aaa varchar2(20) := 'HELLO WORLD';
+begin
+    DBMS_OUTPUT.PUT_LINE(v_aaa);
+end;
+
+----变量赋值(3)：所赋值来自键盘输入
+declare
+    v_aaa varchar2(20) := :请输入; --在datagrip中为：符号，在plsql developer 中为&符号；
+begin
+    DBMS_OUTPUT.PUT_LINE(v_aaa);
+end;
+/*键盘输入值需要注意：
+1、定义的变量是字符型时，输入的内容需要用 单引号 引起来
+             是数字型时，只能输入纯数字(可以是整数，小数，负数)
+             是日期型时，需要 TO_DATE() 函数 来进行转换
+2、如果定义变量时定义了长度，那么输入的时候不能超过该长度*/
+
+/*定义变量时注意的事：
+1、声明/定义变量的时候，如果定义的变量是字符型的，那么必须要给长度
+                        如果是数字型的，可以给长度，也可以不给
+                        如果是日期型的，就不给长度
+2、定义了变量的长度之后，给这个变量赋值时不能超过该长度
+3、定义了什么类型的变量，赋值的时候就要赋什么类型的值
+4、定义了一个变量，结尾需要分号表示结束*/
+
+--开发规范：声明变量，变量名以 V_ 开头
+
+--二次赋值，原值会被替换
+DECLARE
+    V_HELLO VARCHAR2(20) := 'HELLO';
+BEGIN
+    V_HELLO := V_HELLO || ' ORACLE';
+    --V_HELLO := V_HELLO || ' ' || 'ORACLE'; ---空格也是占一位字符长度的
+    DBMS_OUTPUT.PUT_LINE(V_HELLO);
+END;
+
+--赋值超过规定字符长度，报错
+DECLARE
+    V_HELLO VARCHAR2(15);
+BEGIN
+    V_HELLO := 'HELLO WORLD!!!!Q'; ---不能超过定义变量时的长度
+    DBMS_OUTPUT.PUT_LINE(V_HELLO);
+END;
+
+--pl/sql程序设计中的特点，查不到值时，会报错。
+declare
+    v_bbb varchar2(20);
+begin
+    select ENAME into v_bbb from EMP where EMPNO = 1234;
+end;
+
+
+--输入及输出
+--输入一个员工编号，输出对应姓名，岗位，工资
+declare
+    v_empno number;
+    v_ename varchar2(20);
+    v_job   varchar2(20);
+    v_sal   number;
+begin
+    v_empno := :请输入工号;
+    select ENAME, JOB, SAL into v_ename,v_job,v_sal from EMP where EMPNO = v_empno;
+    DBMS_OUTPUT.PUT_LINE('姓名：' || v_ename || ' ' || '岗位：' || v_job || ' ' || '工资：' || v_sal);
+end;
+-- SELECT ...INTO ...需要注意的点：
+-- 1、我们查询的结果 必须是一行数据 ，不能是0行或者多行
+-- 2、INTO后面接的是变量，用处是将SELECT后查询出来的字段列分别依次放到变量中
+
+
+/*小练习一把：定义一个长度为20位的字符型变量，接收手动输入的值，并且在执行的时候需要连接' ORACLE'，
+打印出输入的内容+连接后的变量的值*/
+declare
+    v_str    varchar2(20);
+    v_output varchar2(20);
+begin
+    v_str := :请输入;
+    v_output := v_str || ' ORACLE';
+    DBMS_OUTPUT.PUT_LINE(v_output);
+end;
+
+declare
+    v_str varchar2(20);
+begin
+    v_str := :请输入 || ' ORACLE';
+    DBMS_OUTPUT.PUT_LINE(v_str);
+end;
+
+
+--小练习一把:输入一个日期，并打印出这个日期
+declare
+    v_date date;
+begin
+    v_date := :请输入;
+    DBMS_OUTPUT.PUT_LINE(v_date);
+end;
+------定义变量的另外的格式：
+--第1种：变量名 表名.列名%TYPE，照搬指定列的数据类型
+declare
+    v_ename emp.ENAME%type;
+begin
+    select ENAME into v_ename from EMP where EMPNO = :请输入;
+    DBMS_OUTPUT.PUT_LINE(v_ename);
+end;
+
+--练习：接受员工编号，打印出员工姓名，工作，工资，所属部门，入职时间(变量数据类型用type匹配）
+declare
+    v_empno    emp.EMPNO%type;
+    v_ename    emp.ENAME%type ;
+    v_job      emp.JOB%type;
+    v_sal      emp.SAL%type;
+    v_deptno   emp.DEPTNO%type ;
+    v_hiredate emp.HIREDATE%type ;
+begin
+    v_empno:=:请输入;
+    select ename, job, sal, deptno, hiredate
+    into v_ename,v_job,v_sal,v_deptno,v_hiredate
+    from EMP
+    where EMPNO = v_empno;
+    DBMS_OUTPUT.PUT_LINE('姓名：' || v_ename || ' ' || '岗位：' || v_job || ' ' || '工资：' || v_sal || ' ' || '部门编号：' ||
+                         v_deptno || ' ' || '入职时间：' || v_hiredate);
+end ;
+
+--第2种：变量名 表名%ROWTYPE,完完全全照搬一个表的格式,只需声明一个变量
+declare
+    v_emp  emp%rowtype;
+begin
+    v_emp.EMPNO:=:请输入;
+    select ename, job, sal, deptno, hiredate
+    into v_emp.ename,v_emp.job,v_emp.sal,v_emp.deptno,v_emp.hiredate
+    from EMP
+    where EMPNO = v_emp.empno;
+    DBMS_OUTPUT.PUT_LINE('姓名：' || v_emp.ename || ' ' || '岗位：' || v_emp.job || ' ' || '工资：' || v_emp.sal || ' ' || '部门编号：' ||
+                         v_emp.deptno || ' ' || '入职时间：' || v_emp.hiredate);
+end;
+--复合数据类型：将多个简单的数据类型组合在一起，存储在一个变量名中,相当于自定义数据类型
+declare
+      --先自己造一个数据类型
+  type t_emp is record(
+  v_ename varchar2(30),
+  v_sal number,
+  v_deptno number);
+  --将这个数据类型声明给一个变量
+  v_user t_emp;
+begin
+  select ename,sal,deptno into v_user from emp where empno=7788;
+  dbms_output.put_line('这个人：'||v_user.v_ename||'的工资是：'||v_user.v_sal||'部门是：'||v_user.v_deptno);
+end;
+
+
+
+---小练习一把：输入员工工号，打印出该员工的姓名，部门编号，部门名称，上班地点
+--用显式表连接
+declare
+    v_emp  EMP%rowtype;
+    v_dept DEPT%rowtype;
+begin
+    v_emp.EMPNO := :请输入工号;
+    select ENAME, e.DEPTNO, DNAME, LOC
+    into v_emp.ENAME,v_emp.DEPTNO,v_dept.DNAME,v_dept.LOC
+    from EMP e
+             join DEPT D on D.DEPTNO = e.DEPTNO
+    where e.EMPNO = v_emp.EMPNO;
+    DBMS_OUTPUT.PUT_LINE('员工姓名：' || V_EMP.ENAME || ' ' || '部门编号：' || V_EMP.DEPTNO || ' ' ||
+                         '部门名称：' || v_dept.DNAME || ' ' || '上班地点：' || v_dept.LOC);
+end;
+
+-- 用隐式表连结
+declare
+    v_empno  number := :请输入工号;
+    v_ename  varchar2(20);
+    v_deptno varchar2(20);
+    v_dname  varchar2(20);
+    v_loc    varchar2(20);
+begin
+    select e.ename, e.deptno, d.dname, d.loc
+    into v_ename,v_deptno,v_dname,v_loc
+    from emp e,
+         dept d
+    where e.deptno = d.deptno
+      and e.empno = v_empno;
+    dbms_output.put_line('员工姓名: ' || v_ename || ' 部门编号: ' || v_deptno || ' 部门名称: ' || v_dname ||
+                         ' 上班地点: ' || v_loc);
+end ;
+
+
+--输入一个部门编号，打印该部门的员工姓名
+--输入的部门编号是50(查不到任何数据)，会出现报错提示
+--输入的部门编号是20(查询出多条数据)，会出现报错提示
+DECLARE
+    V_DEPTNO NUMBER(4) := :请输入;
+    V_ENAME  VARCHAR2(10);
+BEGIN
+    SELECT E.ENAME
+    INTO V_ENAME
+    FROM EMP E
+    WHERE E.DEPTNO = V_DEPTNO;
+    DBMS_OUTPUT.PUT_LINE('姓名:' || V_ENAME);
+END;
+
+---常量
+--常量在声明时赋予初值，并且在运行时不允许重新赋值。使用CONSTANT关键字声明常量。
+-- DECLARE
+--     常量名 CONSTANT 数据类型 := 初始值;
+--     --常量名 数据类型 DEFAULT 初始值;
+-- BEGIN
+--
+-- END;
+
+--比如：输入一个值，以这个值为半径，计算圆的面积
+DECLARE
+    V_PI CONSTANT NUMBER(3, 2) := 3.14; ---定义一个常量，并且值为3.14
+    V_R           NUMBER;
+    V_AREA        NUMBER;
+BEGIN
+    V_R := :请输入一个数字;
+    V_AREA := V_PI * V_R ** 2;
+    DBMS_OUTPUT.PUT_LINE('圆的面积是:' || V_AREA);
+END;
+
+
+
+
+
+
+
+

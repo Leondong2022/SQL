@@ -1,0 +1,119 @@
+-- 索引
+-- 什么是索引？
+-- 类似于字典里面的目录结构，存储的是每个数据在表格里面的位置。目的是为了加快数据的查询速度，减少查询消耗的资源
+-- 索引是根据rowid定位行的信息。
+--索引的分类：唯一索引，主键索引，普通索引，组合索引，位图索引等
+-- 查看表格中有没有索引：
+Select * from user_indexes where table_name='EMP';  --注意，表名只能大写
+
+--普通索引：经常被查询，这个字段又没有什么特征的就设置普通索引
+create index emp_job on EMPFQ(JOB);
+--对比，分别在建了分区及索引的表及没建的表中，查询在1981年入职的SALESMAN
+select * from EMPFQ where to_char(HIREDATE,'yyyy')='1981' and  JOB='SALESMAN';
+select * from EMP_JOB partition (SALESMAN) where JOB='SALESMAN';
+--删除普通索引：
+Drop index emp_job;
+
+--主键索引：不能够单独创建，只能够随着主键约束生成，删除主键约束，主键索引同时被删除;
+-- 注意：主键索引不能够单独创建，也不能够单独删除！
+alter table EMP_BIG_1 add constraint pk_empo primary key (empno);
+alter table EMP_BIG_1 drop constraint pk_empo;
+
+--唯一索引：可以单独创建和删除，也可以随着唯一约束创建和删除
+--单独创建和删除唯一索引
+create unique index uk_ename on EMP(ename);
+drop index uk_ename;
+insert into EMP (EMPNO,ENAME) values (1111,'SCOTT'); --无法插入，违反唯一约束条件 (SCOTT.UK_ENAME)
+--跟随创建唯一索引
+alter table EMP add constraint emp_unique unique  (ENAME);
+-- 跟随删除
+alter table EMP drop constraint emp_unique;
+
+-- 组合索引：经常要一起被查询，放在where条件后，则在这些列同时创建组合索引，如果被查询时，第一个字段必须出现
+create index dept_job on EMPFQ(DEPTNO,JOB);
+select * from EMPFQ where JOB='SALESMAN';  --不走索引
+select * from EMPFQ where DEPTNO=10;       --走一级索引
+select * from EMPFQ where DEPTNO=10 and JOB='SALESMAN'; --既一级索引又走二级索引。
+
+--函数索引：你的字段是需要被函数计算过之后才进行查询的
+create index idx_hiredate on EMP(to_char(hiredate,'yyyy'));
+
+--位图索引：当表格被查询的字段有非常多的重复值：（数据量特别小的时候，位图索引会失效）
+create bitmap index idx_job on emp (job);
+
+--重建索引
+alter index idx_job  rebuild partition p1;
+
+-- 分区表格中的索引，在已经分区的表格中，再次创建索引加快表格的查询速度
+--本地索引
+--Create index 索引名字 on 分区表名字（列名） local;
+--在分区表的某分区创建本地索引
+create  index emp_loc_index on emp_loc(Loc) local (partition emp_loc_index1 ,
+    partition emp_loc_index2 ,
+    partition emp_loc_index3 );
+--全局索引
+--Create index 索引名字 on 分区表名字（列名） global;
+--给分区表的某列建全局索引
+CREATE INDEX month_ix ON sales(sales_month)
+GLOBAL PARTITION BY RANGE(sales_month)
+(PARTITION pm1_ix VALUES LESS THAN (2),
+ PARTITION pm2_ix VALUES LESS THAN (3),
+ PARTITION pm3_ix VALUES LESS THAN (4),
+ PARTITION pm12_ix VALUES LESS THAN (MAXVALUE));
+
+--强行走索引
+/*+ INDEX(表名 索引名) */ --指定索引
+create index EMP_BIG_index on EMP_BIG(EMPNO);
+select /*+index(EMP_BIG EMP_BIG_index)*/ * from EMP_BIG ;
+
+--***索引的优缺点
+-- 优点：创建索引可以大大提高系统的性能
+-- 1.创建唯一索引，可以保证数据库表每一行数据的唯一性
+-- 2.可以大大加快查询的速度，这也是创建索引最主要的原因
+-- 3.可以加速表与表之间的连接，对实现数据的完整性特别有意义
+-- 4.在进行分组或者排序查询时，可以减少查询的时间
+
+-- 缺点
+-- 1.创建索引和维护索引都需要消耗时间，这个时间随着数据量的增加而增加
+-- 2.建索引需要占用物理空间，除了数据和表需要占用空间，索引也需要
+-- 3.对表的数据进行dml操作的时候，索引也要进行动态的维护，这样就降低了数据的维护的速度
+
+-- ***索引既然能够加速，为什么不给每个字段都加索引呢？
+-- 1.索引会降低表格dml的速度
+-- 2.索引也会占用磁盘空间
+-- 3.索引太多会造成表格操作时占用的资源多
+-- 4.oracle项目规范中，一个表格最多建5个索引，建在检查被查询的列上面
+
+-- ***全局索引和位图索引的区别
+-- 全局索引不能创建位图索引，global和bitmap不能同时使用
+-- 本地索引不能创建唯一索引，local和unique不能同时使用
+-- 相同的数据查询，全局索引的效率比本地索引要高
+-- 本地索引是每个分区单独创建和管理的索引，全局索引是整个表格统一管理的
+-- 如果把表格truncate了，本地索引不会受到影响，全局索引失效，需要重建：
+-- Alter index  idx_id rebuild
+
+-- ***索引在什么情况下会失效（核心：无法一一匹配）
+-- 1.查询等号左右两边的数据类型不一致的时候(隐式转换）
+Select * from emp where to_char(hiredate,'yyyy')=1980;
+-- 2.查询语句等号的左边使用了没有在函数索引中定义的函数(使用了函数）
+Select * from emp where to_number(to_char(hiredate,'yyyy'))=1980;
+-- 3.查询语句中使用了不等运算 ！= <> not
+Select * from emp where to_char(hiredate,'yyyy')!=1980;
+-- 4.查询语句查询了空值
+Select * from emp where to_char(hiredate,'yyyy') is null;
+-- 5.位图索引使用了模糊查询
+Select * from emp where job like 'A%';
+-- 6.在其他的索引中，如果模糊查询放在最前面
+
+-- ***oracle里面，如果有个sql运行很慢，怎么办
+-- 1.查看执行计划，查看句子的消耗的资源和内部运行的逻辑，查看语句是否运行复杂等，查看每个子句运行的过程
+-- 2.给数量非常大的表格建分区（emp表为例，两个g是800万）
+-- 3.给查询字段加索引
+-- 4.查看有没有索引失效
+-- 5.Sql语句频繁对硬盘进行读写，可以把语句改成代码块让硬盘读写的次数变少
+-- 6.写代码块减少客户端与服务器交换的次数
+-- 7.还可以使用多进程
+    --启用并行查询
+    --ALTER TABLE T1 PARALLEL;
+    --select /*+ parallel(t1 8) */ count(*)from t1;  --表示对t1表取8并行查询
+-- 8.Or会导致表格重复被读取，效率降低

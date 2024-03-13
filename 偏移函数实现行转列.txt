@@ -1,0 +1,21 @@
+--用lag和lead实现行列转换
+--lag()实现行转列
+select e.SALESMAN, PRESIDENT, MANAGER, CLERK, ANALYST
+from (select SAL                                   SALESMAN,
+             lag(SAL, 1, null) over (order by JOB) PRESIDENT,
+             lag(SAL, 2, null) over (order by JOB) MANAGER,
+             lag(SAL, 3, null) over (order by JOB) CLERK,
+             lag(SAL, 4, null) over (order by JOB) ANALYST,
+             row_number() over (order by JOB)      rn
+      from TB_ROW_TO_COLUMN) e
+where rn = 5;
+--用lead（）实现行转列
+select e.ANALYST, CLERK, MANAGER, PRESIDENT, SALESMAN
+from (select SAL                                    ANALYST,
+             lead(SAL, 1, null) over (order by JOB) CLERK,
+             lead(SAL, 2, null) over (order by JOB) MANAGER,
+             lead(SAL, 3, null) over (order by JOB) PRESIDENT,
+             lead(SAL, 4, null) over (order by JOB) SALESMAN,
+             row_number() over (order by JOB)       rn
+      from TB_ROW_TO_COLUMN) e
+where e.rn = 1;

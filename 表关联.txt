@@ -1,0 +1,115 @@
+--表关联：不同的表，通过关联条件列，横向拼接在一起
+--关联条件列：两个表都有的列，或者有相互关系的列
+
+--表关联的种类：
+
+
+-- 内关联（inner join）：两张表的关联条件取交集。内关联哪张表放前面，哪张表放后面，不影响结果。也无主从表之分。
+-- 比如emp表中deptno有10，20，30. dept表中有10，20，30，40.但是内关联只取它们公共有的10，20，30.
+-- 隐式内连接（无join）
+select t1.EMPNO,
+       t1.ENAME,
+       t1.JOB,
+       t1.MGR,
+       t1.HIREDATE,
+       t1.SAL,
+       t1.COMM,
+       t1.DEPTNO,
+       t2.DEPTNO,
+       DNAME,
+       LOC
+from EMP t1,
+     DEPT t2
+where t1.DEPTNO = t2.DEPTNO;
+
+--显示内连接（有join）
+select t1.EMPNO,
+       t1.ENAME,
+       t1.JOB,
+       t1.MGR,
+       t1.HIREDATE,
+       t1.SAL,
+       t1.COMM,
+       t1.DEPTNO,
+       t2.DEPTNO,
+       DNAME,
+       LOC
+from EMP t1
+         join DEPT t2 on t2.DEPTNO = t1.DEPTNO;
+
+--笛卡尔积：当两张表进行关联，但不指明关联条件时，都会发生笛卡尔积
+--笛卡尔积是一种无序的关联现象.当发生笛卡尔积时，最终出现的行数为两张表的行数乘积。
+select t1.EMPNO, t2.DEPTNO
+from EMP t1,
+     DEPT t2;
+
+
+--笛卡尔积的运用：
+--已知成绩表t_score有学生学号s_id,有科目编号c_id ,有考试成绩score。
+--所有参加了考试的学生信息都会在成绩表中登记，但是不参加考试，则无登记。所有学生最少参加一门考试，所有学生要参加看科目一样。
+--要求：找出所有不参加考试的学生的学号和科目编号
+select t1.s_id, t2.c_id
+from (select distinct s_id from t_score) t1,
+     (select distinct c_id from t_score) t2
+minus
+select s_id, c_id
+from t_score;
+
+--外连接（outer join):有主从表之分，在关联的过程中，主表的所有行都展示，而从表仅展示能关联匹配的行，无法匹配的内容用null填充。
+
+--左外联：主表在左边，也就是在from后面，join的前面
+select t2.*, t1.*
+from DEPT t1
+         left join EMP t2 on t1.DEPTNO = t2.DEPTNO;
+
+--右关联：主表在右边，也就是在join后面
+
+select t2.*, t1.*
+from EMP t2
+         right join DEPT t1 on t1.DEPTNO = t2.DEPTNO;
+
+--为什么要分左关联和右关联：小表驱动大表,一般情况下，小表的数据是大表的十分之一以下。
+--当大表是主表，只能用左关联，这时候效率最高
+select t1.*, t2.*
+from EMP_BIG t1
+         left join DEPT t2 on t1.DEPTNO = t2.DEPTNO;
+--当大表是从表，用右关联效率更高
+select t1.*, t2.*
+from EMP_BIG t1
+         right join DEPT t2 on t1.DEPTNO = t2.DEPTNO;
+
+
+--全连接（full join）：没有主从表之分，两个表都是主表。
+select t1.*, t2.*
+from EMP t1
+         full join DEPT t2 on t1.DEPTNO = t2.DEPTNO;
+
+--自关联（self join）：自己和自己关联，一般用于同一张表中同一列不同行直接的比较
+select a.sal1-b.sal2
+from (select JOB,max(sal) sal1 from EMP where JOB = 'CLERK' group by JOB) a
+         join (select JOB,min(SAL) sal2 from EMP where JOB = 'CLERK' group by JOB) b
+on a.JOB=b.JOB;
+
+--不等值连接
+select b.GRADE,a.SAL, LOSAL, HISAL
+from EMP a join SALGRADE b
+    on a.SAL>=b.LOSAL and a.SAL <=b.HISAL;
+
+select b.GRADE,a.SAL, LOSAL, HISAL
+from EMP a join SALGRADE b
+    on a.SAL between b.LOSAL and b.HISAL;
+
+--多重连接
+--直接多重连接
+select  e.EMPNO,  e.SAL,  e.DEPTNO, DNAME, LOC,s.GRADE, LOSAL, HISAL
+from EMP e
+         join DEPT D on D.DEPTNO = e.DEPTNO
+         join SALGRADE s
+              on e.SAL between s.LOSAL and s.HISAL;
+--子查询封装后再连接
+select a.EMPNO, SAL,  DEPTNO, DNAME, LOC, s.*
+from (select e.EMPNO, e.SAL,  d.DEPTNO, DNAME, LOC
+      from EMP e
+               join DEPT D on D.DEPTNO = e.DEPTNO) a
+         join SALGRADE s
+              on a.SAL between s.LOSAL and s.HISAL;

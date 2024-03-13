@@ -1,0 +1,55 @@
+--行列转换
+--数据准备
+create table tb_row_to_column as
+select JOB, max(sal) sal
+from EMP
+group by JOB;
+select * from tb_row_to_column;
+--用case when 实现行转列
+select sum(case  when JOB='CLERK' then sal else  0 end) CLERK,
+       sum(case  when JOB='SALESMAN' then sal else  0 end) SALESMAN,
+       sum(case  when JOB='PRESIDENT' then sal else  0 end) PRESIDENT,
+       sum(case  when JOB='MANAGER' then sal else  0 end) MANAGER,
+       sum(case  when JOB='ANALYST' then sal else  0 end) ANALYST
+from tb_row_to_column;
+--用decode实现行转列
+select sum(decode(JOB,'CLERK',sal,0))  CLERK,
+       sum(decode(JOB,'SALESMAN',sal,0)) SALESMAN,
+       sum(decode(JOB,'PRESIDENT',sal,0)) PRESIDENT,
+       sum(decode(JOB,'MANAGER',sal,0)) MANAGER,
+       sum(decode(JOB,'ANALYST',sal,0)) ANALYST
+from tb_row_to_column;
+-- 用pivot实现行转列   --for i in () 指对括号内的内容循环遍历
+select *
+from tb_row_to_column
+    pivot (sum(sal) for JOB in
+        ( 'CLERK' CLERK,'SALESMAN' SALESMAN,
+          'PRESIDENT' PRESIDENT,'MANAGER' MANAGER,
+          'ANALYST' ANALYST));
+
+--列转行
+create table tb_column_to_row as
+select sum(case JOB when 'CLERK' then SAL else 0 end)     CLERK,
+       sum(case JOB when 'SALESMAN' then sal else 0 end)  SALESMAN,
+       sum(case JOB when 'PRESIDENT' then sal else 0 end) PRESIDENT,
+       sum(case JOB when 'MANAGER' then sal else 0 end)   MANAGER,
+       sum(case JOB when 'ANALYST' then sal else 0 end)   ANALYST
+from tb_row_to_column;
+select * from tb_column_to_row;
+
+--用union实现列转行
+select 'CLERK' job,CLERK sal from tb_column_to_row
+union
+select 'SALESMAN' job,SALESMAN sal from tb_column_to_row
+union
+select 'PRESIDENT' job,PRESIDENT sal from tb_column_to_row
+union
+select 'MANAGER' job,MANAGER sal from tb_column_to_row
+union
+select 'ANALYST' job,ANALYST sal from tb_column_to_row;
+
+--用unpivot实现列转行
+select *
+from tb_column_to_row
+    unpivot (sal for job in (CLERK,SALESMAN,PRESIDENT,MANAGER,ANALYST));
+

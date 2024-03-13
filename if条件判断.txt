@@ -1,0 +1,108 @@
+--条件判断
+---IF ELSE
+IF  条件1 THEN 执行的逻辑1;
+ELSIF 条件2 THEN  --条件1不满足的时候，会先判断是否满足条件2
+执行的逻辑2;
+ELSE   ---条件1 和条件2 都不满足
+   执行的逻辑3;
+END IF;  ---结束 IF ELSE 条件判断
+
+--数据一个值，进行比对，这个值<10则输出aaa，值<20则输出bbb,其余则输出ccc
+declare
+    v_number number;
+begin
+    v_number:=:请输入;
+    if v_number<10 then DBMS_OUTPUT.PUT_LINE('aaa');
+    elsif v_number<20 then DBMS_OUTPUT.PUT_LINE('bbb');
+    else DBMS_OUTPUT.PUT_LINE('ccc');
+    end if;
+end;
+
+
+DECLARE
+  V_NUMBER NUMBER;
+  V_NO NUMBER;
+BEGIN
+  V_NUMBER :=3;
+  V_NO := 20;
+  IF  V_NUMBER = 3 AND V_NO =20  THEN
+    DBMS_OUTPUT.put_line('GO HERE1');
+  ELSIF V_NUMBER = 3  THEN
+    DBMS_OUTPUT.put_line('GO HERE2');
+  ELSE  ---ELSE 是默认，不能加任何的条件
+    DBMS_OUTPUT.put_line('GO HERE3');
+  END IF;
+END;
+
+--传入一个员工的编号
+--如果这个员工的工资小于1000，就给他加300奖金
+--如果这个员工的工资 1000 到 2000，就给他加200奖金
+--如果这个员工的工资 大于 2000，就给他加100奖金
+declare
+    v_empno     number;
+    v_sal       number;
+    v_comm      number;
+begin
+    v_empno:=:请输入;
+    select SAL,COMM into v_sal,v_comm from EMP where EMPNO=v_empno;
+    if v_sal<1000 then v_comm:=nvl(v_comm,0)+300;
+    elsif v_sal<=2000 then v_comm:=nvl(v_comm,0)+200;
+    else v_comm:=nvl(v_comm,0)+100;
+    end if;
+    DBMS_OUTPUT.PUT_LINE(v_comm);
+end;
+
+--练习
+---传入一个员工的工号
+-- 如果这个员工的 岗位是 ANALYST 或者  CLERK 或者 SALESMAN 就给员工加 500 块工资
+-- 如果这个员工的 岗位是 MANAGER ，就给员工加 800 块工资
+-- 其它的岗位就不用管，什么都不干
+declare
+    v_emp emp%rowtype;
+begin
+    v_emp.EMPNO:=:请输入;
+    select JOB,SAL into v_emp.JOB,v_emp.SAL from EMP where EMPNO=v_emp.EMPNO;
+    if v_emp.JOB in ('ANALYST',  'CLERK', 'SALESMAN') then v_emp.SAL:=v_emp.SAL+500;
+    elsif  v_emp.JOB ='MANAGER' then v_emp.SAL:=v_emp.SAL+800;
+    else v_emp.SAL:=v_emp.SAL+0;
+    end if;
+    DBMS_OUTPUT.PUT_LINE(v_emp.SAL);
+end;
+
+-- IF 嵌套
+DECLARE
+ V_N1 NUMBER;
+ V_N2 NUMBER;
+BEGIN
+  V_N1 := 2;
+  V_N2 := 2;
+  IF V_N1=2 THEN
+      DBMS_OUTPUT.put_line('111');
+      IF V_N2 = 2 THEN
+         DBMS_OUTPUT.put_line('222');
+      END IF;
+  else
+      DBMS_OUTPUT.put_line('333');
+  END IF;
+END;
+
+
+-- 练习
+---传入一个员工的工号
+-- 如果这个员工的 岗位是 ANALYST 或者  CLERK 或者 SALESMAN 并且工资在500到2000之间， 就给员工加 500 块工资
+-- 如果这个员工的 岗位是 MANAGER ，并且工资在1500到3500之间，就给员工加 800 块工资
+-- 其它的岗位就不用管，什么都不干；
+declare
+    v_emp  EMP%rowtype;
+begin
+    v_emp.EMPNO:=:请输入;
+    select JOB,SAL into v_emp.JOB,v_emp.SAL from EMP where EMPNO=v_emp.EMPNO;
+    if v_emp.JOB  in ('ANALYST','CLERK','SALESMAN') then
+        if v_emp.SAL between 500 and 2000 then v_emp.SAL:=v_emp.SAL+500;
+        end if;
+    elsif v_emp.JOB ='MANAGER' then
+        if v_emp.SAL between 1500 and 3500 then v_emp.SAL:=v_emp.SAL+800;
+        end if;
+    end if;
+    DBMS_OUTPUT.PUT_LINE('岗位：'||v_emp.JOB||' '||'工资：'||v_emp.SAL);
+end;

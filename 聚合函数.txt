@@ -1,0 +1,111 @@
+--聚合函数：所谓聚合，就是把多行的结果，汇算成一个结果。
+--常见聚合函数：sum（） avg（） max（） min() count()
+
+--sum() 求和
+select sum(SAL) from EMP;
+--查询emp表中，各部门的工资总和
+select DEPTNO,sum(SAL) from EMP group by DEPTNO;
+--查询emp表中，各岗位的工资总和
+select JOB,sum(SAL) from EMP group by JOB;
+--查询emp表中，各部门及岗位的工资总和,按部门升序排序
+select  DEPTNO,JOB,sum(SAL) from EMP group by DEPTNO,JOB order  by DEPTNO;
+
+--avg() 求平均值
+--round(列，精度):对小数点进行四舍五入
+--查询emp表中全公司的工资平均值
+select round(avg(SAL),2) from EMP;
+--查询emp表中，各部门的平均工资
+select DEPTNO,round(avg(SAL),2) from EMP group by DEPTNO;
+--查询emp表中，各岗位的平均工资
+select JOB,round(avg(SAL),2) from EMP group by JOB;
+--查询emp表中，各部门各岗位的平均工资
+select DEPTNO,JOB,round(avg(SAL),2) from EMP group by DEPTNO, JOB;
+
+--min() 求最小值
+--查询emp表中全公司的工资最小值
+select min(SAL) from EMP;
+--查询emp表中，各部门的工资最小值
+select DEPTNO,min(SAL) from EMP group by DEPTNO;
+--查询emp表中，各岗位的工资最小值
+select JOB,min(SAL) from EMP group by JOB;
+--查询emp表中，各部门及岗位的工资最小值,按部门升序排序
+select  DEPTNO,JOB,min(SAL) from EMP group by DEPTNO,JOB order  by DEPTNO;
+
+
+
+--max() 求最大值
+--查询emp表中全公司的工资最大值
+select max(SAL) from EMP;
+--查询emp表中，各部门的工资最大值
+select DEPTNO,max(SAL) from EMP group by DEPTNO;
+--查询emp表中，各岗位的工资最大值
+select JOB,max(SAL) from EMP group by JOB;
+--查询emp表中，各部门及岗位的工资最大值,按部门升序排序
+select  DEPTNO,JOB,max(SAL) from EMP group by DEPTNO,JOB order  by DEPTNO;
+
+
+--count(): 计数
+--查询emp表中全公司的员工总数
+select count(EMPNO) from EMP;
+--查询emp表中，各部门的员工总数
+select DEPTNO,count(EMPNO) from EMP group by DEPTNO;
+--查询emp表中，各岗位的工资员工总数
+select JOB,count(EMPNO) from EMP group by JOB;
+--查询emp表中，各部门及岗位的工资员工总数,按部门升序排序
+select  DEPTNO,JOB,count(EMPNO) from EMP group by DEPTNO,JOB order  by DEPTNO;
+
+
+--重点：count(*) ,count(列)，count(1)的区别
+select count(COMM) from EMP;  --count(列)不计算空值
+
+select count(*) from EMP;     --count(*) 计算总共有多少行，可以根据情况套子查询分组
+
+select count(1) from EMP ;
+--count(1) 在对空值的判断上与count(*)一致，得到的行数也一致。当数据量少的时候，count(1)比count(*)查询速度快。
+
+
+-- count(*) 和 count(1)和count(列名)区别？
+-- 从执行结果来说：
+-- count（1）和count（*）之间没有区别，因为count（*）count（1）都不会去过滤空值，
+-- 但count（列名）就有区别了，因为count（列名）会去过滤空值。
+
+-- 从执行效率来说：
+-- （1）如果列为主键，count(列名)效率优于count(1) ；如果列不为主键，count(1)效率优于count(列名) ；
+-- （2）如果表中存在主键，count(主键列名)效率最优；
+-- （3）如果表中只有一列，则count(*)效率最优；如果表有多列，且不存在主键，则count(1)效率优于count(*)；
+
+--having ：对聚合运算之后的结果进行筛选
+
+--having与where的区别
+--where筛选的是来自表中的数据，满足条件即筛出，数据不做处理。
+--having筛选的是来自聚合运算之后是结果，数据是经过聚合处理的。
+
+--查询emp表中各部门的平均工资，但只展示平均工资大于2000的部门及其平均工资
+select DEPTNO,round(avg(SAL),2) from EMP group by DEPTNO having round(avg(SAL),2)>2000;
+--查询各部门工资大于1500的员工的平均工资，最后展示平均工资大于2000的部门及其平均工资
+--第一步：先筛选出工资大于1500的员工
+select * from EMP where SAL>1500;
+--第二步：各部门工资大于1500的员工的平均工资
+select DEPTNO,round(avg(SAL),2) from EMP where SAL>1500 group by DEPTNO;
+--第三步；展示平均工资大于2000的部门及其平均工资
+select DEPTNO,round(avg(SAL),2)
+ from EMP
+where SAL>1500 group by DEPTNO
+having round(avg(SAL),2)>2000;
+
+
+--sql代码的执行顺序
+--from      ①
+--where     ②
+--group by  ③
+--聚合运算   ④
+--having    ⑤
+--select    ⑥
+--order by  ⑦
+
+--代码执行顺序对别名的影响：用法上别名只允许跟着出现在order by之后。
+select DEPTNO,round(avg(SAL),2)  平均工资
+ from EMP
+where SAL>1500 group by DEPTNO
+having round(avg(SAL),2)>2000
+order by 平均工资 desc ;

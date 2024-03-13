@@ -1,0 +1,83 @@
+--dml语句：表层级的语句，只要用于增删改查表中的内容
+
+--insert  增加，插入数据
+--oracle对数据的安全性要求很高，所有的增删改必须commit提交，并且每行代码只能插入一行数据。
+-- mysql中支持同时插入多行数据，且不需要commit，因此mysql的数据安全性要求，没Oracle高
+insert into t_b  values (111,99999,'aaaa',1234,null);  --不推荐这种插入用法
+commit ;
+
+-- 原因：
+create table t_a (id number,name varchar2(20));
+alter table t_a add time timestamp;
+-- 往表b_a插入数据
+insert into t_a values (1111,'aaaa',null);
+commit ;
+
+--推荐插入数据的标准写法
+insert into t_a(id, name,time) values (2222,'bbbb',null);
+commit ;
+
+--delete 删除表中的某行或者某些行
+--删除t_a中id为111的行数据
+--注意：加了where指定删除条件，只删除满足条件的数据。若不加where，则删除全表。
+delete from t_a where id=1111;
+commit ;
+
+--删除t_a中time 为null的数据（只删除满足条件的数据）
+delete from t_a where time is null ;
+commit ;
+
+--删除t_a中所有数据
+delete from t_a;
+rollback ;
+commit ;
+
+truncate table t_a;
+
+--drop、truncate与delete的区别
+--从执行效率来说，效率最高的是drop，其次为truncate，最后为delete。
+--从执行效果来说，drop为删除表，truncate为删除表之后重建表结构，两者都是ddl语句不能回滚。但delete为dml语句，可以回滚。
+--从水位线来说，drop和truncate都可以降低水位线，但delete因为有碎片可回滚，不降低水位线。
+
+--update 更新，修改，但注意只修改表中的具体数据，无法修改表结构。
+--将表t_b中99999客户的的PAY_ID改为222
+update T_B set PAY_ID=222 where CUST_ID=99999;
+rollback ;
+update T_B set PAY_ID=222 ;  --PAY_ID的所有行数据都将被改成222，谨慎使用。
+commit ;
+
+-- select 查询
+-- 注意，select可以查得到更改了但是未提交的数据
+-- 比如将t_b中aaaa的pay_id改成111
+update T_B set PAY_ID=111 where CUST_NAME='aaaa';
+select * from T_B;
+
+--查询emp表中的指定列，比如empno,ename和job
+select empno, ename, job from EMP;
+
+--以别名的形式查询emp表中的指定列，比如empno,ename和job
+select empno as 工号, ename 姓名, job 岗位 from EMP;
+
+--以表别名的形式查询emp表中的指定列，比如empno,ename和job
+select t1.EMPNO,t1.ENAME,t1.JOB from EMP  t1;
+
+--模糊查询 like
+--%表示0个或者多个字符
+--_表示一位字符，一般称_为占位符
+--查询emp中姓名为S开头的员工信息。
+select empno, ename, job, mgr, hiredate, sal, comm, deptno from EMP  where ENAME like 'S%';
+
+--查询emp中姓名结尾为S的员工信息。
+select empno, ename, job, mgr, hiredate, sal, comm, deptno from EMP  where ENAME like '%S';
+
+--查询emp中姓名的包含A的员工信息。
+select empno, ename, job, mgr, hiredate, sal, comm, deptno from EMP  where ENAME like '%A%';
+
+--查询emp中姓名的中间有A的员工信息。
+select empno, ename, job, mgr, hiredate, sal, comm, deptno from EMP  where ENAME like '_%A%_';
+
+--查询emp中名字的第二个字符为L的员工信息
+select empno,ename,job,mgr,
+       hiredate,sal,comm,deptno
+from EMP
+where ENAME like '_L%';

@@ -1,0 +1,24 @@
+--伪列：不存在于任何一个表，但可以和任一个表连用，只能用于查询，不能增删改
+--rownumb:为结果集的每一行标识一个号，第一行返回1，第2行返回2,一般用于查询指定行、页的数据
+select emp.*,ROWNUM from EMP where ROWNUM<=10;  --返回10行
+select emp.* from EMP where ROWNUM<=10;  --不展示ROWNUM，返回10行
+--查询工资排名前五的员工信息
+select * from EMP where ROWNUM<=5;
+--查询emp_big表中第一页数据（分页查询）
+select count(*) from EMP_BIG;
+select e.EMPNO, ENAME, JOB, MGR,
+       HIREDATE, SAL, COMM, DEPTNO
+from (select EMP_BIG.*,ROWNUM rn from EMP_BIG) e
+where e.rn between 501 and 1000;
+
+
+--rowid:表中某一行的本地物理位置，在该行数据被写入硬盘产生，相当于该行数据在硬盘上的门牌号。一般通过rowid提高查询效率或者去重
+select emp.* ,ROWID from EMP;
+select * from EMP where ROWID='AAAR3sAAEAAAACXAAB';
+--利用rowid去重,即删除掉指定rowid之外的所有同类数据
+insert into EMP_AAA select * from EMP;
+commit ;
+select e.*,ROWID from EMP_AAA e order by EMPNO;
+
+delete from EMP_AAA where ROWID not in(select max(ROWID) from EMP_AAA group by EMPNO);
+commit ;

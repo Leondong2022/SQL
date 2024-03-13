@@ -1,0 +1,178 @@
+--基本函数
+--单行行数：
+
+--数字函数：
+--round（）：四舍五入
+select round(4.89765, 2)
+from dual;
+--trunc()截取:不考虑四舍五入，直接截取
+select trunc(4.89765, 2)
+from dual;
+--ceil（）向上取整,相当于进1
+select ceil(4.89765)
+from dual;
+select ceil(4.19765)
+from dual;
+--floor（）：向下取整，相当于去尾
+select floor(4.89765)
+from dual;
+select floor(4.19765)
+from dual;
+--abs():取绝对值
+select abs(-3.567)
+from dual;
+--mod():取模，也就是余数
+select mod(10, 3)
+from dual;
+select mod(10, 4)
+from dual;
+--power():求幂次方
+select power(3, 2)
+from DUAL;
+select power(5, 3)
+from DUAL;
+
+--字符串相关函数
+--字符串的截取:Substr(字符串,从第几位开始截取,截取的长度)
+select ENAME, substr(ENAME, 2, 3)
+from EMP;
+select substr('440010199001011234', 7, 8)
+from dual;
+--替换字符：replace(字符串,旧的字符，新的字符)
+select ENAME, replace(ENAME, 'A', '*')
+from EMP;
+select replace('440010199001011234', substr('440010199001011234', 7, 8), '********')
+from dual;
+--寻找某字符，并给出字符所在的切片位置：instr(字符串,寻找的字符)
+select ENAME, instr(ENAME, 'A')
+from EMP;
+select replace('440010199001011234', substr('440010199001011234', instr('440010199001011234', '19'), 8), '********')
+from dual;
+-- 字符串的大小写转换:Lower() upper()
+select lower('AAAABBB')
+from dual;
+select upper('aaaabbb')
+from DUAL;
+--首字母大写initcap（）
+select initcap(lower(ENAME))
+from EMP;
+--字符串的拼接：concat（字符串1，字符串2）  只能有两个参数     ||:管道拼接符
+select concat('Hello', ' World')
+from dual;
+select 'Hello' || ' World'
+from dual;
+select 'Hello ' || ENAME || ' World'
+from EMP;
+--.计算字符串的长度 length()
+select length(ENAME) || ' ' || length(JOB)
+from EMP;
+-- 去掉字符串中左边的特有数据：ltrim（）不写去除范围，默认是去掉空格
+-- 去掉字符串右边的特有数据：rtrim()
+-- 去掉字符串左右两边特有的数据：trim() 只能去空格，不能去其他符号
+SELECT LENGTH('     NAME')
+FROM DUAL; --长度为9
+SELECT LTRIM('     NAME')
+FROM DUAL;
+SELECT LENGTH(LTRIM('     NAME'))
+FROM DUAL; --长度为4
+select 'name      '
+from DUAL;
+SELECT LENGTH('name      ')
+FROM DUAL; --长度为1-
+select rtrim(('name      '))
+from DUAL;
+select length(rtrim(('name      ')))
+from DUAL;--长度为4
+select length('      name         ')
+from dual; --长度为19
+select trim('      name         ')
+from DUAL;
+select length(trim('      name         '))
+from DUAL;
+-- 在字符串的左右两边填充数据 lpad（） rpad（）
+-- Lpad(字符串，总长度，左边填充的字符)
+-- rpad(字符串，总长度，右边填充的字符)
+select lpad(ENAME, 10, '@')
+from EMP;
+select rpad(ENAME, 10, '@')
+from EMP;
+select rtrim(rpad(ENAME, 10, '@'), '@')
+from EMP;
+
+-- 进行字符串从列到行的转换，wm_concat（列名）
+CREATE TABLE interesting
+(
+    name        varchar2(20),
+    interesting varchar2(20)
+);
+insert into interesting(name, interesting)
+values ('张三', '篮球');
+insert into interesting(name, interesting)
+values ('张三', '足球');
+insert into interesting(name, interesting)
+values ('张三', '排球');
+insert into interesting(name, interesting)
+values ('李四', '篮球');
+insert into interesting(name, interesting)
+values ('李四', '乒乓球');
+insert into interesting(name, interesting)
+values ('李四', '羽毛球');
+commit;
+--将同一个人的不同兴趣汇总到一行
+select name, WM_CONCAT(interesting)
+from interesting
+group by name
+order by name desc;
+
+--时间日期函数
+-- 获取当前的日期：sysdate
+select sysdate from dual;
+--进行日期相差的天数的计算：直接相减 to_date() 与date''
+select date'2022-11-20' - date '2022-11-13'from dual;
+select date'2022-11-20' +1 from dual;
+
+select a.HIREDATE,b.HIREDATE,a.hiredate - b.hiredate
+from (select HIREDATE from EMP where ENAME = 'JONES') a,
+     (select HIREDATE from EMP where ENAME = 'SMITH') b;
+--日期和日期之间相差多少个月 months_between(date1,date2)
+select  months_between(date '2023-3-25',date '2022-12-31') from DUAL;
+select trunc(months_between(date '2023-3-25',date '2022-12-31'))  from DUAL;
+--月份的相加减  add_months(日期，月份的数量)
+select add_months(sysdate,4) from DUAL;
+select add_months(sysdate,-4) from DUAL;
+--查询日期所在的当前月的最后一天：last_day(日期)
+select last_day(date '2022-11-13') from dual;
+--将日期转换为星期:to_char(日期,'day')
+select to_char(HIREDATE,'day') 星期几 from EMP;
+--日期的截取 trunc（）,按规定的时间定义,返回最开始的时间
+select trunc(sysdate) from dual;    --只返回日期,相当于后面加'dd'
+select trunc(sysdate,'yyyy') from dual;  --返回日期所在的那个年的第一天
+select trunc(sysdate,'mm') from dual;  --返回当月第一天
+select trunc(sysdate,'dd') from dual;  --返回当天的00点,也就是第一刻
+select trunc(sysdate,'d') from dual;   --返回这个星期的第一天   星期天的日期
+select trunc(sysdate,'hh') from dual;  --返回当前的小时的第一刻
+select trunc(sysdate,'mi') from dual;  --返回当前的分钟
+
+--纪念日代码
+select trunc(sysdate)-date'2022-01-03' from dual;
+
+--执行计划
+-- 执行计划是一条查询语句在Oracle中的执行过程或访问路径。
+-- 执行完一条select语句后，在PLSQL执行计划窗口查看，或按F5即可查看刚执行的这条查询语句的执行计划。
+-- 主要看以下内容：
+-- (1)执行顺序：缩进最多的先执行；同一级的动作遵循最上最右先执行；
+-- (2)表扫描方式：全表扫描(full scan)、索引扫描(index scan)
+-- (3)关联机制：嵌套循环、哈希连接、排序-合并连接
+-- (4)耗费（COST）、CPU耗费：Oracle估计的该步骤的执行成本，用于说明SQL执行的代价，理论上越小越好
+
+-- 表的扫描方式有哪些？优缺点是什么？
+-- 主要有全表扫描、索引扫描
+-- 优缺点：全表扫描可直接读取表中所有行，适合数据量小或者数据量大返回结果多；
+-- 索引扫描，查询速度快，耗费资源少，先扫描索引得到对应的ROWID，然后通过ROWID定位到具体的行读取数据；适合数据量大，返回值少的表；
+
+-- 表的关联方式有哪些？优缺点是什么？
+-- 关联方式：嵌套循环、哈希连接、排序-合并连接
+-- 优缺点：
+-- 嵌套循环分为驱动表和匹配表，从驱动表获取一行数据，在匹配表找符合条件的行；确定合适驱动表，建立索引，执行效率会很高；
+-- 哈希连接，先生成哈希函数，对两张表生成哈希值，利用哈希值建立连接。在数据量大，无索引时，比嵌套效率高，适合等值连接；
+-- 排序-合并，先排序，再连接；针对数据量大，无索引，需要排序时运用，适用不等式连接；

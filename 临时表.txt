@@ -1,0 +1,77 @@
+
+-- 临时表的数据是存放在内存中的，比直接读写硬盘的表格数据，资源消耗更少，读取的速度会更快
+-- 1.会话级临时表
+-- Create global temporary table 临时表的名字（
+-- 列名 数据类型） on commit preserve rows;
+create global temporary table tmp_users(
+dl date,
+uni number,
+platf varchar2(20),
+event varchar(20))on commit preserve rows ;
+-- 只有在当前执行数据插入的窗口中有效，且换窗口，preserve rows或者重新登录的时候，数据都会清空，
+-- 在平时的sql语句中要使用临时表，一般都是会话级；
+
+--插入数据
+insert into tmp_users(uni) values(12);
+commit ;
+--查询验证
+select * from scott.tmp_users;
+-- 可以看到数据，但是你切换窗口或者切换用户之后再重新登录，再次select
+-- 会发现表格被清空了；
+
+--2.事务级临时表
+-- Create global temporary  table 表名(
+-- 列名 数据类型）on commit delete rows;
+create global temporary table tmp_users2(
+dl date,
+uni number,
+platf varchar2(20),
+event varchar(20))on commit delete rows;
+-- 当你提交数据或者回滚数据的时候，表格的数据会被清空，
+-- 如果是在代码块里面，使用数据库编程的语句，需要用到临时表，一般就是事务级的临时表
+insert into tmp_users2(uni) values(12); --不提交
+select * from tmp_users2;
+commit ;
+--Select 查询是有数据的，假如commit或者rollback,数据就没了；
+
+--with as 临时表:一般用于测试代码的准确性
+
+--相当于建了个名为AAA临时表
+with
+    AAA AS (
+    SELECT 'AAA' FROM DUAL
+) SELECT * FROM AAA;
+
+--相当于建了e、d临时表
+WITH E AS ( SELECT * FROM EMP),
+     D AS (SELECT * FROM DEPT)
+SELECT E.*,D.* FROM E JOIN D ON  E.DEPTNO=D.DEPTNO;
+
+-- 其实就是把一大堆重复用到的sql语句放在with as里面，取一个别名，后面的查询就可以用它.
+-- 这样对于大批量的sql语句起到一个优化的作用，而且清楚明了。
+
+-- 向一张表插入数据的with as  语法：
+truncate table EMP_0415;
+insert  into  EMP_0415
+with
+      e  as  ( select  *  from  scott.emp)
+select  *  from  e;
+COMMIT ;
+
+-- with as短语与UNION ALL连用
+with
+      e  as  ( select  *  from  scott.emp),
+      d  as  ( select  *  from  scott.dept)
+select  E.*  from  e, d  where  e.deptno = d.deptno
+UNION ALL
+select  E.*  from  e, d  where  e.deptno = d.deptno;
+
+
+
+-- 查看当前用户
+select user from dual;
+-- 日期转换,把日期转换为星期,一般用于标准化（一致化）
+select to_char(sysdate,'day') from dual;
+--把emp中的入职日期转成星期
+select to_char(HIREDATE,'day') from EMP;
+

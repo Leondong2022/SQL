@@ -1,0 +1,29 @@
+--子查询：子查询也是完整的sql语句，但是查询的结果是作为另一个sql语句的一部分。
+
+--需要写子查询是因为，一个sql语句无法直接查询所需的内容，需要嵌套中转。
+--比如只知某人的姓名，想查其所在部门的人数。这时候只能通过名字查部门，再由部门求人数。
+--子查询可以出现先sql语句的任意部分，可以出现在select后面，可以出现在from后面，可以出现在where后面，也可以出现在having和order by后面
+--但使用频率最高的，是出现from 和where后面
+
+
+--简单子查询
+
+--子查询作为where的一个判断条件
+--统计SMITH所在部门的员工人数
+select count(EMPNO)
+from EMP
+where DEPTNO = (select DEPTNO from EMP where ENAME = 'SMITH');
+
+--子查询作为from后面的基表
+--查询工资在1500以上的员工的平均工资
+select round(avg(SAL), 2)
+from (select SAL from EMP where SAL > 1500);
+select round(avg(SAL), 2)
+from (select SAL, comm, deptno from EMP where SAL > 1500);
+--查询结果与上条sql一样
+
+--复杂子查询
+--统计SMITH所在部门中工资高1500的员工人数
+select count(EMPNO)
+ from (select SAL, DEPTNO, EMPNO from EMP where SAL > 1500)
+    where DEPTNO = (select DEPTNO from EMP where ENAME = 'SMITH');

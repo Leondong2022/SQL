@@ -1,0 +1,159 @@
+-- 事务 transaction
+
+-- 目的：保证数据的完整性。
+-- 四大特性：（ACID）
+-- 并发：脏读，不可重复读，幻读
+-- 隔离级别
+
+
+-- 四大特性（ACID）
+--        事务特性	                                  描述
+-- 原子性（Atomicity）	          原子工作单元，不可分割
+-- 一致性（Consistency）	          事务结束前后，数据 整体不变
+-- 隔离性（Isolation）	          多个事务独立运行，互不干扰
+-- 持久性（Durability）	          事务一旦提交，对数据的改变 永久有效
+
+insert into EMP_AAA(empno, ename, job) values (11122,'aaaa','gggg');
+--同时将11122,'aaaa','gggg'插入表格，而不是先插入11122，再插入'aaaa'，最后插入'gggg'。
+
+--数据准备
+create table account (id int,name varchar(20), money int);
+insert into account values (1111,'张三',600);
+insert into account values(2222,'李四',800);
+commit ;
+-- 举例：张三 向 李四 银行转账 100 元
+-- 步骤1：张三 的账户金额 - 100 元
+update account set money = money - 100 where name = '张三';
+
+-- 步骤2：李四 的账户金额 + 100 元
+update account set money = money + 100 where name = '李四';
+rollback ;
+commit ;
+-- 解释说明：
+-- 原子性：上述 2 条 sql 语句的执行，要么全部成功，要么全部失败
+-- 一致性：账户总金额不变
+-- 隔离性：张三、李四 看不到彼此的账户信息
+-- 持久性：事务提交后，账户金额被永久保存
+
+
+
+-- 并发：脏读，不可重复读，幻读
+--      事务	                                            读写
+-- 脏读（Dirty Read）	                     1. 脏读：读到的是 修改 但 未提交 的数据,侧重只查一次，且最后rollback了
+-- 不可重复读（Nonrepeatable Read）	         2. 不可重复读：同样的条件，侧重查两次，前后读取的结果不一致，偏向 “update” 操作
+-- 幻读（Phantom Read）	                     3. 幻读：同样的条件，前后读取的结果不一致，偏向 “insert” 和 “delete”
+
+
+-- 基础数据准备
+create table scott.emp_bak as select * from scott.emp; -- scott.emp_bak   aaaa   这时aaaa就是scott.emp_bak的同义词
+
+-- 1. 脏读：读到的是 修改 但 未提交 的数据
+/*
+  事务 A 读取被事务 B 修改但 "未提交" 的数据（'Test'）
+  (1) 假如 B 回退，则事务 A 读取的是 "无效" 的数据（"脏数据"）
+  (2) 这跟 "不可重复读" 类似，但是事务 B 不需要执行提交。
+*/
+-- 事务A						事务B
+----------------------------------------------------
+							update scott.emp_bak t2
+							   set t2.job = 'TEST'
+							 where t2.empno = 7369;
+----------------------------------------------------
+select t1.job -- Test
+  from scott.emp_bak t1
+ where t1.empno = 7369;
+----------------------------------------------------
+							rollback;
+
+
+-- 2. 不可重复读：同样的条件，前后读取的结果不一致，偏向 “update” 操作
+/*
+  同样的条件, 你读取过的数据, 再次读取出来发现值不一样了
+  (1) 不可重复读的重点是 "修改"
+*/
+-- 事务A						事务B
+----------------------------------------------------
+select t1.job
+  from scott.emp_bak t1
+ where t1.empno = 7369;
+----------------------------------------------------
+							update scott.emp_bak t2
+							   set t2.job = 'Test2'
+							 where t2.empno = 7369;
+							commit;
+----------------------------------------------------
+select t1.job -- Test2
+  from scott.emp_bak t1
+ where t1.empno = 7369;
+
+
+-- 3. 幻读：同样的条件，前后读取的结果不一致，偏向 “insert” 和 “delete”
+/*
+  同样的条件, 第 1 次和第 2 次读出来的记录数不一样
+  (1) 幻读的重点在于 "新增" 或者 "删除" (数据条数变化)。
+*/
+-- 事务A						事务B
+----------------------------------------------------
+select t1.job
+  from scott.emp_bak t1
+ where t1.empno = 7369;
+----------------------------------------------------
+							insert into scott.emp_bak(empno, job)
+							values(7369, 'Test2');
+							commit;
+
+                            DELETE FROM emp_bak WHERE EMPNO=7369;
+                            COMMIT ;
+----------------------------------------------------
+select t1.job -- 多了 Test2
+  from scott.emp_bak t1
+ where t1.empno = 7369;
+
+
+-- 2.3 隔离级别
+-- 隔离级别由低到高	                                       脏读	        不可重复读	幻读	      数据库默认
+-- 读未提交 （Read Uncommitted）	         √	           √	                 √
+-- 读已提交 （Read Commited）	         ×	           √	                 √	       Oracle
+-- 重复读取（Repeatable Read）	         ×	           ×	                 √	       Mysql
+-- 序列化 （Serializable）	                         ×	           ×	                 ×
+
+
+-- 引入事务隔离级别的目的：解决 事务的并发问题
+-- 隔离级别并非越高越好。越高意味着需要更多的 锁 来保证事务的正确性，效率就越低
+-- 一般设置为：read-comment
+
+-- 事务的开始和结束
+-- 1. 事务的开始
+--    (1) 一条 sql、一组 sql 或 一个程序块
+
+-- 2. 事务的结束
+--  (1) '显示'结束：commit、rollback
+--  (2) '隐式'结束：DDL、DCL（隐含了 commit）、
+--                客户端主动断开数据库的连接（disconnect）、
+--                数据库关闭（宕机）
+
+
+-- 下列情况中，会导致 Oracle 事务结束的有（）（多选）
+--   A、pl/sql 块结束
+--   B、发出 savepoint 语句
+--   C、用户强行退出 sql*plus
+--   D、发出 select 语句
+--   E、发出 commit 或 rollback 语句
+
+
+
+-- 答案：C、E
+-- 解析：(1) 事务结束可以采用 commit 或 rollback
+--      (2) 若强行退出 sql*plus，事务将自动回滚
+
+--自治事务
+/*
+1. '自治事务' 是什么?
+   (1) 自己管理自己（事务之间，各自为政，互不干扰）
+   (2) 自己的 commit、rollback 不会影响到其它事务，也不会被其它事务所影响
+2. 常用场景
+   (1) 错误日志。记录错误日志的 commit，不会影响到业务数据
+3. 语法
+   在语句声明部分 declare，加入下列语句即可
+   pragma autonomous_transaction;
+*/

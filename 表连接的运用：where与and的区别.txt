@@ -1,0 +1,42 @@
+create table t_a(id number,name varchar2(20));
+
+insert into t_a(id, name) VALUES (1,'张三');
+insert into t_a(id, name) VALUES (2,'李四');
+insert into t_a(id, name) VALUES (3,'王五');
+insert into t_a(id, name) VALUES (4,'孙六');
+commit ;
+
+create table t_b(id number,name varchar2(20));
+
+insert into t_b (id, name) values (1,'张三');
+insert into t_b (id, name) values (5,'陆甲');
+insert into t_b (id, name) values (6,'徐乙');
+commit ;
+
+--在左连接中，筛选时用where 和 on 的区别
+--对表t_a和t_b做左连接
+select a.*,b.* from t_a a  left join t_b b on a.id=b.id ;
+--出现4行数据，因为主表t_a中有4行数据，会全部展现。t_b中能关联上的数据才会展现，关联不上的数据，用null填充。
+--对表t_a和t_b做左连接，查询id=2时的数据
+select a.*,b.* from t_a a  left join t_b b on a.id=b.id where a.id=2;
+--出现1行数据，因为在表连接之后的4行里面，只有1行数据满足筛选条件。
+
+--对表t_a和t_b做左连接，在连接条件那里加上a.id=2。
+select a.*,b.* from t_a a  left join t_b b on a.id=b.id and a.id=2;
+
+
+--where与and的区别：
+--where：连表时候做筛选，最后出现的行数，为where筛选条件满足的行数。效率较低。
+--and：连表的同时做筛选，最后出现的行数为主表的行数。主表中的数据全部展示，从表中只有满足连接条件的数据才展示，其余用null填充。查询效率较高。
+
+--用左连接，最多可以出多少行，最少多少行
+--最少的行数一定是主表的行数，可以把行数较少的表放主表。
+select a.*,b.* from t_a a  left join t_b b on a.id=b.id;
+--最多多少行：
+--发生笛卡尔积:最后出现的行数是两边表行数的乘积。
+select a.*,b.* from t_a a,t_b b ;
+--不发生笛卡尔积:是一种特色情况，从表中的关联列全部为一个值，这时联表只有一个值能匹配，其余用null填充。
+--出现的行数为  左表的行数+右表的行数-1
+select *
+from t_a a
+         left join t_b b on a.id = b.id;

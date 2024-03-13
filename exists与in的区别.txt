@@ -1,0 +1,61 @@
+--bool:布尔数据类型，真为true 假为false  （python的数据类型，但思想通用）
+
+--EXISTS:检查后面子查询的结果是否为真，如果子查询为true则执行外面的SQL语句，如果返回为false则不执行外面的SQL语句。
+-- exists 用法：
+-- select 列名 from 表名 T1 where exists(子查询：select * from T2 where T1.a=T2.a);
+-- 句中的“select * from T2 where T1.a=T2.a” 相当于一个关联表查询，
+-- 相当于“select * from T1,T2  where T1.a=T2.a”；
+-- “exists（xxx）”它只在乎括号里的数据能不能查找出来，是否存在这样的记录，如果存在，这句的where 条件成立。
+
+
+
+--在 DEPT 表中找出在 EMP 表中存在的部门编号
+SELECT T1.*
+FROM DEPT T1
+WHERE EXISTS(
+             SELECT 1
+             --select 1常用在exists子句中，检测符合条件记录是否存在。
+             --select 1这里的 “1”其实是无关紧要的，换成“*”也没问题，但数据量小时，1比*效率高
+             FROM EMP T2
+             WHERE T2.DEPTNO = T1.DEPTNO  --内表必须要和外表连接。
+            );
+
+--NOT EXISTS
+--在 DEPT 表中找出在 EMP 表中不存在的部门编号(类似MINUS）
+SELECT T1.*
+FROM DEPT T1
+WHERE NOT EXISTS(--要找的是不满足 T1.DEPTNO = T2.DEPTNO 的数据
+                  SELECT 1
+                 FROM EMP T2--10  20   30
+                 WHERE T2.DEPTNO = T1.DEPTNO
+                );
+
+-- 用Oracle Exists替换DISTINCT:
+-- 当提交一个包含一对多表信息(比如部门表和雇员表)的查询时，避免在SELECT子句中使用DISTINCT。
+-- 一般能够考虑用Oracle EXIST替换，Oracle Exists使查询更为迅速。
+
+-- 找到emp中涉及到的部门编号和部门名字
+select d.DEPTNO,d.DNAME from dept d,EMP e where d.DEPTNO=e.DEPTNO;
+
+-- 用distinct去重查询emp中涉及到的部门编号和部门名字
+select distinct d.DEPTNO,d.DNAME from dept d,EMP_BIG e where d.DEPTNO=e.DEPTNO;
+
+-- -- 用exists去重查询emp中涉及到的部门编号和部门名字
+select d.DEPTNO,d.DNAME from dept d where exists(select 1 from EMP_BIG e where d.DEPTNO=e.DEPTNO);
+
+-- 方法一：用DISTINCT
+ select DISTINCT A.DEPTNO,B.DEPTNO FROM EMP A,DEPT B WHERE A.DEPTNO=B.DEPTNO  ORDER BY A.DEPTNO;
+-- 方法二：用Exists
+select d.DEPTNO,d.DNAME from dept d where exists(select 1 from EMP_BIG e where d.DEPTNO=e.DEPTNO);
+
+-- exists和in的效率问题:有两个简单例子，以说明 “exists”和“in”的效率问题
+-- T1数据量小而T2数据量非常大时，T1<<T2 时，用exists 的查询效率高。
+select * from T1 where exists(select * from T2 where T1.a=T2.a) ;
+-- T1数据量非常大而T2数据量小时，T1>>T2 时，用in 的查询效率高。
+select * from T1 where T1.a in (select T2.a from T2) ;
+
+-- 原因详解：
+-- in查询就是先将子查询条件的记录全都查出来，不走索引。假设结果集为B，共有m条记录，然后在将子查询条件的结果集分解成m个，再进行m次查询
+-- exists()直接查数据库，走索引，并且不缓存查询出来的结果集，
+-- 因为exists()结果集的内容并不重要，重要的是其内查询语句的结果集空或者非空，空则返回false，非空则返回true。
+

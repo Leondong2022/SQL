@@ -1,0 +1,35 @@
+create table course_score
+(
+    s_name varchar2(20),
+    c_name varchar2(20)
+);
+insert into course_score(s_name, c_name)
+VALUES ('张三', '英语');
+insert into course_score(s_name, c_name)
+VALUES ('张三', '语文');
+insert into course_score(s_name, c_name)
+VALUES ('张三', '数学');
+insert into course_score(s_name, c_name)
+VALUES ('李四', '英语');
+insert into course_score(s_name, c_name)
+VALUES ('李四', '数学');
+insert into course_score(s_name, c_name)
+VALUES ('王五', '英语');
+insert into course_score(s_name, c_name)
+VALUES ('王五', '语文');
+insert into course_score(s_name, c_name)
+VALUES ('贾六', '数学');
+insert into course_score(s_name, c_name)
+VALUES ('贾六', '语文');
+commit;
+
+select distinct s_name
+from course_score;
+select distinct c_name
+from course_score;
+--利用笛卡尔积求缺考学生名单及缺考科目
+select a.*, b.*
+from (select distinct s_name from course_score) a,
+     (select distinct c_name from course_score) b
+minus
+select s_name,c_name from course_score;

@@ -1,0 +1,47 @@
+create database test ;
+create database ods;
+show databases ;
+use test;
+
+
+create table DEPT
+(
+    DEPTNO int  primary key,
+    DNAME  VARCHAR(14),
+    LOC    VARCHAR(13)
+);
+create table EMP
+(
+    EMPNO   int primary key,
+    ENAME    VARCHAR(10),
+    JOB      VARCHAR(9),
+    MGR      int,
+    HIREDATE DATE,
+    SAL      float(7, 2),
+    COMM     float(7, 2),
+    DEPTNO  int(2),
+        FOREIGN KEY fk_emp(DEPTNO)
+   REFERENCES dept(DEPTNO)
+   ON UPDATE CASCADE
+   ON DELETE RESTRICT
+);
+
+ALTER table emp
+
+ADD CONSTRAINT constraint_name
+
+FOREIGN KEY fk_emp(DEPTNO)
+
+REFERENCES dept(DEPTNO);
+
+create table SALGRADE
+(
+    GRADE int,
+    LOSAL int,
+    HISAL int
+);
+
+create table t_a(id int primary key auto_increment,name varchar(20));
+
+insert into t_a(name) values ('aaaa');
+insert into t_a(name) values ('bbbb');
